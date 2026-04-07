@@ -17,6 +17,34 @@ export function getDirectionsForLevel(level: number): AnyDirection[] {
 
 const DIRECTION_ORDER = CARDINAL_DIRECTIONS;
 
+/**
+ * Distribute all 4 directions across players.
+ * 4 players: 1 each. 3 players: 2-1-1. 2 players: 2-2.
+ */
+function reassignDirections(room: Room) {
+  const dirs = CARDINAL_DIRECTIONS;
+  const n = room.players.length;
+  if (n === 0) return;
+
+  // Clear all
+  for (const p of room.players) {
+    p.assignedDirections = [];
+  }
+
+  // Distribute round-robin
+  for (let i = 0; i < dirs.length; i++) {
+    const player = room.players[i % n];
+    player.assignedDirections.push(dirs[i]);
+  }
+
+  // Primary direction = first assigned
+  for (const p of room.players) {
+    if (p.assignedDirections.length > 0) {
+      p.assignedDirection = p.assignedDirections[0];
+    }
+  }
+}
+
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -42,6 +70,7 @@ export class RoomManager {
       id: hostSocketId,
       name: playerName,
       assignedDirection: DIRECTION_ORDER[0],
+      assignedDirections: [DIRECTION_ORDER[0]],
       inputCount: 0,
       isHost: true,
       connected: true,
@@ -98,13 +127,15 @@ export class RoomManager {
     const player: PlayerState = {
       id: socketId,
       name: playerName,
-      assignedDirection: DIRECTION_ORDER[directionIndex],
+      assignedDirection: DIRECTION_ORDER[directionIndex] || DIRECTION_ORDER[0],
+      assignedDirections: [],
       inputCount: 0,
       isHost: false,
       connected: true,
     };
 
     room.players.push(player);
+    reassignDirections(room);
     room.gameState.players = [...room.players];
     room.lastActivity = Date.now();
     this.playerToRoom.set(socketId, code);
@@ -148,9 +179,7 @@ export class RoomManager {
         room.hostId = room.players[0].id;
         room.players[0].isHost = true;
       }
-      room.players.forEach((p, i) => {
-        p.assignedDirection = DIRECTION_ORDER[i];
-      });
+      reassignDirections(room);
       room.gameState.players = [...room.players];
       return { room, destroyed: false, shouldPause: false, disconnectedName };
     }

@@ -54,27 +54,32 @@ export function PlayerDirectionOverlay({ players, myPlayerId }: PlayerDirectionO
   return (
     <div style={containerStyle}>
       {players.map(p => {
-        const color = DIRECTION_COLORS[p.assignedDirection] || '#999';
+        const dirs = p.assignedDirections || [p.assignedDirection];
+        const primaryColor = DIRECTION_COLORS[dirs[0]] || '#999';
         const isMe = p.id === myPlayerId;
 
         return (
           <div key={p.id} style={{
             ...playerCardStyle,
-            borderBottom: `3px solid ${color}`,
+            borderBottom: `3px solid ${primaryColor}`,
             background: isMe ? 'rgba(126, 203, 245, 0.15)' : 'rgba(255,255,255,0.6)',
           }}>
-            <ArrowIcon direction={p.assignedDirection} color={color} size={20} />
+            <div style={{ display: 'flex', gap: 2 }}>
+              {dirs.map(d => (
+                <ArrowIcon key={d} direction={d} color={DIRECTION_COLORS[d] || '#999'} size={16} />
+              ))}
+            </div>
             <div style={{
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: isMe ? 800 : 600,
               color: '#4a3f6b',
               lineHeight: 1.2,
             }}>
               {p.name}
-              {isMe && <span style={{ color, fontSize: 9 }}>(나)</span>}
+              {isMe && <span style={{ color: primaryColor, fontSize: 9 }}>(나)</span>}
             </div>
-            <div style={{ fontSize: 10, color, fontWeight: 700 }}>
-              {DIRECTION_LABELS[p.assignedDirection] || p.assignedDirection}
+            <div style={{ fontSize: 9, color: primaryColor, fontWeight: 700 }}>
+              {dirs.map(d => DIRECTION_LABELS[d] || d).join('·')}
               {p.isHost ? ' · 방장' : ''}
             </div>
           </div>

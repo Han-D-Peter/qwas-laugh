@@ -8,5 +8,5 @@ export const MAX_LEVEL = 30;
 export const ROOM_CODE_LENGTH = 4;
 export const ROOM_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 export const PHASE2_KEY_RECOGNITION_TIME = 5000; // 5 seconds
-export const MIN_PLAYERS = 1; // 1 for dev/testing, 4 for production
+export const MIN_PLAYERS = 2; // 2~4 players supported
 export const MAX_PLAYERS = 4;

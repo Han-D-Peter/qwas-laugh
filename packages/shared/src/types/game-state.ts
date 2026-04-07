@@ -58,6 +58,8 @@ export interface PlayerState {
   id: string;
   name: string;
   assignedDirection: AnyDirection;
+  /** All directions this player controls (multiple when <4 players) */
+  assignedDirections: AnyDirection[];
   inputCount: number; // tracks activity for Phase 2 selection
   isHost: boolean;
   connected: boolean;

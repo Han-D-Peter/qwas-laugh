@@ -35,8 +35,8 @@ export class ObstacleManager {
     // No ghosts before level 9
     if (level < 9) return;
 
-    // Number of ghosts scales with level
-    const count = Math.min(Math.floor((level - 7) / 2), 6);
+    // Ghosts scale linearly: Lv9=1, Lv12=2, Lv15=3, Lv18=4, Lv21=5, Lv24=6, Lv27=7, Lv30=8
+    const count = Math.min(1 + Math.floor((level - 9) / 3), 8);
     const rng = mulberry32(seed + 33333);
 
     for (let i = 0; i < count; i++) {

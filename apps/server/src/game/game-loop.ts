@@ -85,11 +85,18 @@ export class GameLoopManager {
       type: room.gameState.level % 30,
     };
 
-    // Reassign directions based on current level's difficulty
+    // Reassign directions based on current level and player count
     const directions = getDirectionsForLevel(room.gameState.level);
-    for (let i = 0; i < room.players.length; i++) {
-      room.players[i].assignedDirection = directions[i % directions.length];
+    const n = room.players.length;
+    for (let i = 0; i < n; i++) {
+      room.players[i].assignedDirections = [];
       room.players[i].inputCount = 0;
+    }
+    for (let i = 0; i < directions.length; i++) {
+      room.players[i % n].assignedDirections.push(directions[i]);
+    }
+    for (const p of room.players) {
+      p.assignedDirection = p.assignedDirections[0] || directions[0];
     }
     room.gameState.players = [...room.players];
 
@@ -150,8 +157,9 @@ export class GameLoopManager {
     const player = game.room.players.find(p => p.id === playerId);
     if (!player) return;
 
-    // Validate: player can only send their assigned direction
-    if (direction !== player.assignedDirection) return;
+    // Validate: player can only send their assigned directions
+    const allowed = player.assignedDirections || [player.assignedDirection];
+    if (!allowed.includes(direction)) return;
 
     player.inputCount++;
 
