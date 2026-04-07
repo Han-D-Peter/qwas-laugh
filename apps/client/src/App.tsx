@@ -259,7 +259,7 @@ export function App() {
     ('ontouchstart' in window || window.innerWidth <= 768);
 
   const myPlayer = players.find(p => p.id === myPlayerId);
-  const myDirection: AnyDirection | null = myPlayer?.assignedDirection ?? null;
+  const myDirections: AnyDirection[] = myPlayer?.assignedDirections || (myPlayer ? [myPlayer.assignedDirection] : []);
 
   const handleTouchDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     if (appMode === 'local') {
@@ -342,7 +342,7 @@ export function App() {
       {/* Touch controls for mobile */}
       {isTouchDevice && (
         <TouchControls
-          myDirection={appMode === 'multiplayer' ? myDirection : null}
+          myDirections={appMode === 'multiplayer' ? myDirections : []}
           onDirection={handleTouchDirection}
           onGrab={handleTouchGrab}
           phase={gameInfo.phase}

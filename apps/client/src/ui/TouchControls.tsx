@@ -2,8 +2,8 @@ import React, { useCallback } from 'react';
 import type { AnyDirection } from '@qwas/shared';
 
 interface TouchControlsProps {
-  /** My assigned direction in multiplayer (highlighted), null for local */
-  myDirection: AnyDirection | null;
+  /** All my assigned directions in multiplayer, empty for local */
+  myDirections: AnyDirection[];
   onDirection: (dir: 'up' | 'down' | 'left' | 'right') => void;
   onGrab: () => void;
   phase: string;
@@ -23,7 +23,7 @@ const DIR_LABELS: Record<string, string> = {
   'up-left': '좌상', 'up-right': '우상', 'down-left': '좌하', 'down-right': '우하',
 };
 
-export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost }: TouchControlsProps) {
+export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost }: TouchControlsProps) {
   const press = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     onDirection(dir);
   }, [onDirection]);
@@ -38,7 +38,7 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
         {!isPhase2 && (
           <DirButton
             dir="up"
-            myDir={myDirection}
+            myDirs={myDirections}
             onPress={() => press('up')}
             style={{ gridArea: 'up' }}
           />
@@ -46,7 +46,7 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
         {/* Left */}
         <DirButton
           dir="left"
-          myDir={myDirection}
+          myDirs={myDirections}
           onPress={() => press('left')}
           style={{ gridArea: 'left' }}
         />
@@ -75,7 +75,7 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
         {/* Right */}
         <DirButton
           dir="right"
-          myDir={myDirection}
+          myDirs={myDirections}
           onPress={() => press('right')}
           style={{ gridArea: 'right' }}
         />
@@ -83,7 +83,7 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
         {!isPhase2 && (
           <DirButton
             dir="down"
-            myDir={myDirection}
+            myDirs={myDirections}
             onPress={() => press('down')}
             style={{ gridArea: 'down' }}
           />
@@ -93,13 +93,13 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
   );
 }
 
-function DirButton({ dir, myDir, onPress, style }: {
+function DirButton({ dir, myDirs, onPress, style }: {
   dir: 'up' | 'down' | 'left' | 'right';
-  myDir: AnyDirection | null;
+  myDirs: AnyDirection[];
   onPress: () => void;
   style: React.CSSProperties;
 }) {
-  const isMine = myDir === dir;
+  const isMine = myDirs.length === 0 || myDirs.includes(dir);
   const color = DIR_COLORS[dir];
   const rotations: Record<string, number> = { up: 0, down: 180, left: -90, right: 90 };
   const rot = rotations[dir];
@@ -125,7 +125,7 @@ function DirButton({ dir, myDir, onPress, style }: {
       </svg>
       {isMine && (
         <span style={{ fontSize: 9, fontWeight: 700, display: 'block', marginTop: -2 }}>
-          {DIR_LABELS[myDir!] || dir}
+          {DIR_LABELS[dir] || dir}
         </span>
       )}
     </button>
