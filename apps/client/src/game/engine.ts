@@ -67,6 +67,11 @@ export class GameEngine {
   private suspensePhase = '';
   private seed = 0;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
+  /**
+   * When true, the engine only renders server state (no local simulation or input).
+   * Used in multiplayer mode.
+   */
+  private remoteMode = false;
 
   constructor(container: HTMLElement, onInfoUpdate: (info: GameInfo) => void) {
     this.container = container;
@@ -93,8 +98,10 @@ export class GameEngine {
     this.phase1Scene = new Phase1Scene(this.worldContainer);
     this.phase2Scene = new Phase2Scene(this.worldContainer);
 
-    this.setupLevel(this.level);
-    this.setupInput();
+    if (!this.remoteMode) {
+      this.setupLevel(this.level);
+      this.setupInput();
+    }
     this.running = true;
     this.gameLoop();
   }
@@ -348,7 +355,8 @@ export class GameEngine {
   private gameLoop() {
     if (this.destroyed) return;
 
-    if (this.running) {
+    // Only run local simulation in local mode (not remote/multiplayer)
+    if (this.running && !this.remoteMode) {
       if (this.phase === 'phase1') {
         this.updatePhase1();
       } else if (this.phase === 'phase2') {
@@ -480,6 +488,19 @@ export class GameEngine {
       suspenseProgress: this.suspenseProgress,
       suspensePhase: this.suspensePhase,
     });
+  }
+
+  /**
+   * Switch to remote mode — disables local simulation and input.
+   * Call this before applyServerState for multiplayer.
+   */
+  setRemoteMode() {
+    this.remoteMode = true;
+    // Remove local input handler if it was set
+    if (this.keyHandler) {
+      window.removeEventListener('keydown', this.keyHandler);
+      this.keyHandler = null;
+    }
   }
 
   /**

@@ -202,10 +202,11 @@ export function App() {
     if (!canvasContainerRef.current || mountedRef.current) return;
     mountedRef.current = true;
 
-    // Create engine in "remote" mode (no local game loop)
+    // Create engine in remote mode (no local simulation, rendering only)
     const engine = new GameEngine(canvasContainerRef.current, (info) => {
       setGameInfo(info);
     });
+    engine.setRemoteMode();
     engineRef.current = engine;
 
     // Pipe server state into engine for rendering
