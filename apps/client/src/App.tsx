@@ -6,6 +6,8 @@ import { HUD } from './ui/HUD.js';
 import { Lobby } from './ui/Lobby.js';
 import { VoiceControls } from './ui/VoiceControls.js';
 import { PlayerDirectionOverlay } from './ui/PlayerDirectionOverlay.js';
+import { TouchControls } from './ui/TouchControls.js';
+import type { AnyDirection } from '@qwas/shared';
 import type { GameState, PlayerState } from '@qwas/shared';
 
 type AppMode = 'lobby' | 'local' | 'multiplayer';
@@ -237,6 +239,31 @@ export function App() {
     engineRef.current?.restart();
   }, []);
 
+  // ─── Touch Controls ─────────────────────────────────────────
+
+  const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window;
+
+  const myPlayer = players.find(p => p.id === myPlayerId);
+  const myDirection: AnyDirection | null = myPlayer?.assignedDirection ?? null;
+
+  const handleTouchDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
+    if (appMode === 'local') {
+      // Simulate keyboard for local engine
+      const keyMap: Record<string, string> = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: keyMap[dir] }));
+    } else if (appMode === 'multiplayer') {
+      socketRef.current?.sendInput(dir);
+    }
+  }, [appMode]);
+
+  const handleTouchGrab = useCallback(() => {
+    if (appMode === 'local') {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+    } else if (appMode === 'multiplayer') {
+      socketRef.current?.sendGrab();
+    }
+  }, [appMode]);
+
   // ─── Render ─────────────────────────────────────────────────
 
   if (appMode === 'lobby') {
@@ -280,6 +307,15 @@ export function App() {
           voiceManager={voiceManager}
           playerNames={playerNames}
           playerIds={players.map(p => p.id)}
+        />
+      )}
+      {/* Touch controls for mobile */}
+      {isTouchDevice && (
+        <TouchControls
+          myDirection={appMode === 'multiplayer' ? myDirection : null}
+          onDirection={handleTouchDirection}
+          onGrab={handleTouchGrab}
+          phase={gameInfo.phase}
         />
       )}
       {/* Room code badge (multiplayer) */}

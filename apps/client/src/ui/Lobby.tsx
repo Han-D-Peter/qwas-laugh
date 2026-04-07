@@ -136,12 +136,14 @@ const containerStyle: React.CSSProperties = {
   width: '100%', height: '100%',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   background: 'linear-gradient(135deg, #f0e6f6 0%, #e0d4f0 100%)',
+  padding: 16,
+  overflow: 'auto',
 };
 
 const cardStyle: React.CSSProperties = {
   background: '#fff',
   borderRadius: 24,
-  padding: '36px 40px',
+  padding: '28px 24px',
   boxShadow: '0 8px 40px rgba(100, 80, 160, 0.15)',
   textAlign: 'center',
   minWidth: 340,

@@ -255,7 +255,7 @@ export class GameLoopManager {
     }
 
     // Auto-grab at bottom
-    if (game.p2ClawY >= game.p2Path.totalLength - 30) {
+    if (game.p2ClawY >= game.p2Path.totalLength - 10) {
       this.phase2Grab(game);
       return;
     }

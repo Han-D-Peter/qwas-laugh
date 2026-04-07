@@ -32,7 +32,7 @@ test.describe('Lobby', () => {
     await page.goto('/');
     await page.getByText('로컬 싱글플레이').click();
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('Level 1')).toBeVisible();
+    await expect(page.getByText('Lv.1')).toBeVisible();
   });
 
   test('should show join code input when clicking join', async ({ page }) => {

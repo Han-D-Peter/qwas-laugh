@@ -39,29 +39,31 @@ export function HUD({
     <>
       {/* Top bar */}
       <div style={{
-        position: 'absolute', top: 16, left: 16, right: 16,
+        position: 'absolute', top: 8, left: 8, right: 8,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        pointerEvents: 'none',
+        pointerEvents: 'none', gap: 4,
       }}>
-        <div style={pillStyle}>Level {level}</div>
-        <div style={pillStyle}>{PHASE_LABELS[phase] || phase}</div>
-        <div style={pillStyle}>Coins: {coins}</div>
+        <div style={pillStyle}>Lv.{level}</div>
+        <div style={{ ...pillStyle, flex: 1, textAlign: 'center' }}>{PHASE_LABELS[phase] || phase}</div>
+        <div style={pillStyle}>Coin:{coins}</div>
       </div>
 
-      {/* Phase 2 controls hint */}
-      <div style={{
-        position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-        ...pillStyle,
-        fontSize: 12,
-        opacity: 0.7,
-      }}>
-        {phase === 'phase2'
-          ? '좌/우 Arrow: 집게 이동 | Space: 집기'
-          : level >= 21
-            ? 'Arrow keys: 대각선 이동 | Space: 집기 | R: 재시작'
-            : 'Arrow keys: 방향 변경 | Space: 집기 | R: 재시작'
-        }
-      </div>
+      {/* Keyboard controls hint — hidden on touch devices */}
+      {'ontouchstart' in globalThis ? null : (
+        <div style={{
+          position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+          ...pillStyle,
+          fontSize: 11,
+          opacity: 0.6,
+        }}>
+          {phase === 'phase2'
+            ? '좌/우 Arrow: 집게 이동 | Space: 집기'
+            : level >= 21
+              ? 'Arrow keys: 대각선 이동 | Space: 집기 | R: 재시작'
+              : 'Arrow keys: 방향 변경 | Space: 집기 | R: 재시작'
+          }
+        </div>
+      )}
 
       {/* Overlap indicator */}
       {overlapPercent > 0 && phase !== 'suspense' && (
@@ -157,13 +159,14 @@ export function HUD({
 
 const pillStyle: React.CSSProperties = {
   background: 'rgba(255, 255, 255, 0.85)',
-  borderRadius: 16,
-  padding: '8px 18px',
-  fontSize: 15,
+  borderRadius: 12,
+  padding: '5px 12px',
+  fontSize: 13,
   fontWeight: 600,
   color: '#4a3f6b',
-  boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   backdropFilter: 'blur(8px)',
+  whiteSpace: 'nowrap',
 };
 
 const centerOverlay: React.CSSProperties = {

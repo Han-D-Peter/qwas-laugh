@@ -423,7 +423,7 @@ export class GameEngine {
     }
 
     // Auto-grab when reaching the bottom
-    if (this.p2ClawY >= this.p2Path.totalLength - 30) {
+    if (this.p2ClawY >= this.p2Path.totalLength - 10) {
       this.attemptPhase2Grab();
       return;
     }

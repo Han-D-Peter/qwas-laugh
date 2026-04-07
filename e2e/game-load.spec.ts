@@ -23,8 +23,8 @@ test.describe('Game Loading', () => {
 
   test('should display HUD with level and coins in local mode', async ({ page }) => {
     await startLocalGame(page);
-    await expect(page.getByText('Level 1')).toBeVisible();
-    await expect(page.getByText(/Coins: \d+/)).toBeVisible();
+    await expect(page.getByText('Lv.1')).toBeVisible();
+    await expect(page.getByText(/Coin:\d+/)).toBeVisible();
     await expect(page.getByText(/Phase 1/)).toBeVisible();
   });
 

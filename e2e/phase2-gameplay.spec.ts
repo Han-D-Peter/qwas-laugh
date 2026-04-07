@@ -12,7 +12,7 @@ test.describe('Phase 2 Gameplay', () => {
     }
 
     await expect(page.locator('canvas').first()).toBeVisible();
-    await expect(page.getByText(/Level \d+/)).toBeVisible();
-    await expect(page.getByText(/Coins: \d+/)).toBeVisible();
+    await expect(page.getByText(/Lv\.\d+/)).toBeVisible();
+    await expect(page.getByText(/Coin:\d+/)).toBeVisible();
   });
 });

@@ -77,8 +77,20 @@ export function generatePhase2Path(
     currentX = targetX;
   }
 
-  // Doll box X position: random within the bottom portion of the path
+  // Add extra straight runway at the bottom for aiming at the doll
+  const extraRunway = 120;
   const lastCenter = centerLine[centerLine.length - 1];
+  const runwaySteps = 6;
+  for (let i = 1; i <= runwaySteps; i++) {
+    const ry = lastCenter.y + (extraRunway / runwaySteps) * i;
+    centerLine.push({ x: lastCenter.x, y: ry });
+    leftWall.push({ x: lastCenter.x - pathWidth / 2, y: ry });
+    rightWall.push({ x: lastCenter.x + pathWidth / 2, y: ry });
+  }
+
+  const totalWithRunway = pathLength + extraRunway;
+
+  // Doll box X position: random within the bottom portion of the path
   const dollRange = pathWidth * 0.6;
   const dollBoxX = lastCenter.x + (rng() - 0.5) * dollRange;
 
@@ -86,7 +98,7 @@ export function generatePhase2Path(
     centerLine,
     leftWall,
     rightWall,
-    totalLength: pathLength,
+    totalLength: totalWithRunway,
     pathWidth,
     dollBoxX,
   };

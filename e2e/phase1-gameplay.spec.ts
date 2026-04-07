@@ -13,16 +13,21 @@ test.describe('Phase 1 Gameplay', () => {
     await page.waitForTimeout(200);
 
     await expect(page.locator('canvas').first()).toBeVisible();
-    await expect(page.getByText('Level 1')).toBeVisible();
+    await expect(page.getByText('Lv.1')).toBeVisible();
   });
 
   test('should increase coins when claw hits a wall', async ({ page }) => {
-    // Wider corridors at level 1 (cellSize=100) - move long enough to hit boundary
+    // Level 1 maze: 7x7 * 100px = 700px. Claw at ~350px, speed 2px/frame.
+    // May need to bounce multiple directions to guarantee a wall hit.
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(6000);
+    await page.waitForTimeout(4000);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(4000);
 
-    const coinsText = await page.getByText(/Coins: \d+/).textContent();
-    const coins = parseInt(coinsText!.replace('Coins: ', ''));
+    const coinsEl = page.getByText(/Coin:\d+/);
+    await expect(coinsEl).toBeVisible({ timeout: 5000 });
+    const coinsText = await coinsEl.textContent();
+    const coins = parseInt(coinsText!.replace('Coin:', ''));
     expect(coins).toBeGreaterThanOrEqual(1);
   });
 
@@ -33,28 +38,23 @@ test.describe('Phase 1 Gameplay', () => {
     const hasFail = await page.getByText('실패').isVisible().catch(() => false);
     const hasTransition = await page.getByText(/Phase 2/).isVisible().catch(() => false);
     const hasOverlap = await page.getByText(/겹침/).isVisible().catch(() => false);
-    const coinsText = await page.getByText(/Coins: \d+/).textContent().catch(() => 'Coins: 0');
-    const coins = parseInt(coinsText!.replace('Coins: ', ''));
+    const coinsEl = page.getByText(/Coin:\d+/);
+    const coinsText = await coinsEl.textContent().catch(() => 'Coin:0');
+    const coins = parseInt(coinsText!.replace('Coin:', ''));
 
     expect(hasFail || hasTransition || hasOverlap || coins > 0).toBeTruthy();
   });
 
   test('should restart game when pressing R', async ({ page }) => {
-    // With wider corridors at low levels, needs more time to hit wall
     await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(5000);
-
-    const beforeText = await page.getByText(/Coins: \d+/).textContent();
-    const coinsBefore = parseInt(beforeText!.replace('Coins: ', ''));
-    // May or may not have hit a wall yet with wider corridors
-    expect(coinsBefore).toBeGreaterThanOrEqual(0);
 
     await page.keyboard.press('r');
     await page.waitForTimeout(500);
     await page.keyboard.press('r');
     await page.waitForTimeout(1500);
 
-    await expect(page.getByText('Level 1')).toBeVisible();
+    await expect(page.getByText('Lv.1')).toBeVisible();
     await expect(page.getByText(/Phase 1/)).toBeVisible({ timeout: 5000 });
   });
 });
