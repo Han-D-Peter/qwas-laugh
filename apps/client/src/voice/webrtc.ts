@@ -32,7 +32,6 @@ export class VoiceChatManager {
   private onPeersChanged: () => void;
   private pendingPeers = new Set<string>();
   private iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS;
-  /** Used for "polite peer" pattern: lower ID is polite (yields on glare) */
   private myId: string = '';
 
   constructor(socket: GameSocket, onPeersChanged: () => void) {
@@ -45,26 +44,25 @@ export class VoiceChatManager {
     // ─── Receive offer ───
     this.socket.rawSocket.on('voice:offer',
       async ({ fromId, offer }: { fromId: string; offer: RTCSessionDescriptionInit }) => {
-        // "Polite peer" glare handling: if we already sent an offer
-        // and we are the polite side (lower ID), rollback ours and accept theirs
-        let peer = this.peers.get(fromId);
         const isPolite = this.myId < fromId;
 
+        let peer = this.peers.get(fromId);
         if (peer) {
           const state = peer.connection.signalingState;
           if (state === 'have-local-offer') {
             if (!isPolite) {
-              // We are impolite: ignore their offer, they should accept ours
-              console.log('[voice] Ignoring offer from', fromId, '(we are impolite)');
+              // Impolite: ignore their offer
               return;
             }
-            // We are polite: rollback our offer, accept theirs
-            console.log('[voice] Rolling back our offer for', fromId, '(we are polite)');
+            // Polite: rollback ours
             await peer.connection.setLocalDescription({ type: 'rollback' });
           }
         }
 
+        // Create or get peer, ensure tracks are added
         peer = this.getOrCreatePeer(fromId);
+        this.ensureTracksAdded(peer);
+
         try {
           await peer.connection.setRemoteDescription(new RTCSessionDescription(offer));
           const answer = await peer.connection.createAnswer();
@@ -81,11 +79,7 @@ export class VoiceChatManager {
       async ({ fromId, answer }: { fromId: string; answer: RTCSessionDescriptionInit }) => {
         const peer = this.peers.get(fromId);
         if (!peer) return;
-        // Only set remote description if we're expecting an answer
-        if (peer.connection.signalingState !== 'have-local-offer') {
-          console.log('[voice] Ignoring answer from', fromId, 'state:', peer.connection.signalingState);
-          return;
-        }
+        if (peer.connection.signalingState !== 'have-local-offer') return;
         try {
           await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
         } catch (e) {
@@ -101,9 +95,7 @@ export class VoiceChatManager {
         if (peer && candidate) {
           try {
             await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            // May fail if remote description not set yet — safe to ignore
-          }
+          } catch { /* may fail before remote desc set — safe to ignore */ }
         }
       }
     );
@@ -122,15 +114,30 @@ export class VoiceChatManager {
       return false;
     }
 
-    // Add existing players to pending list
+    // Add tracks to any existing peer connections that were created
+    // before we had localStream (e.g. we answered an offer without tracks)
+    for (const peer of this.peers.values()) {
+      const added = this.ensureTracksAdded(peer);
+      if (added) {
+        // Renegotiate: we need to send a new offer with our tracks
+        await this.renegotiate(peer);
+      }
+    }
+
+    // Connect to pending peers
     for (const id of existingPlayerIds) {
       if (id !== this.myId) {
         this.pendingPeers.add(id);
       }
     }
 
-    // Connect to all pending peers
     for (const peerId of this.pendingPeers) {
+      // Only initiate if we don't already have an active connection
+      const existing = this.peers.get(peerId);
+      if (existing && existing.connection.connectionState === 'connected') {
+        // Already connected but may need renegotiation (handled above)
+        continue;
+      }
       await this.initiateConnection(peerId);
     }
     this.pendingPeers.clear();
@@ -140,24 +147,51 @@ export class VoiceChatManager {
 
   async connectToPeer(peerId: string) {
     if (peerId === this.myId) return;
-
     if (!this.localStream) {
       this.pendingPeers.add(peerId);
       return;
     }
-
     await this.initiateConnection(peerId);
+  }
+
+  /**
+   * Ensure local audio tracks are added to the peer connection.
+   * Returns true if tracks were newly added.
+   */
+  private ensureTracksAdded(peer: PeerInfo): boolean {
+    if (!this.localStream) return false;
+
+    const senders = peer.connection.getSenders();
+    const hasAudioSender = senders.some(s => s.track?.kind === 'audio');
+    if (hasAudioSender) return false;
+
+    for (const track of this.localStream.getTracks()) {
+      peer.connection.addTrack(track, this.localStream);
+    }
+    return true;
+  }
+
+  /**
+   * Renegotiate an existing connection (e.g. after adding tracks).
+   */
+  private async renegotiate(peer: PeerInfo) {
+    if (peer.connection.signalingState !== 'stable') return;
+
+    try {
+      const offer = await peer.connection.createOffer();
+      await peer.connection.setLocalDescription(offer);
+      this.socket.sendVoiceOffer(peer.id, offer);
+    } catch (e) {
+      console.warn('[voice] Renegotiation failed for', peer.id, e);
+    }
   }
 
   private async initiateConnection(peerId: string) {
     const peer = this.getOrCreatePeer(peerId);
+    this.ensureTracksAdded(peer);
 
-    // Don't send an offer if we already have an active/connecting state
     const state = peer.connection.signalingState;
-    if (state !== 'stable' && state !== 'closed') {
-      console.log('[voice] Skipping offer to', peerId, 'state:', state);
-      return;
-    }
+    if (state !== 'stable') return;
 
     try {
       const offer = await peer.connection.createOffer();
@@ -181,34 +215,42 @@ export class VoiceChatManager {
       audioLevel: 0,
     };
 
-    // ICE candidate relay
     connection.onicecandidate = (event) => {
       if (event.candidate) {
         this.socket.sendVoiceIceCandidate(peerId, event.candidate.toJSON());
       }
     };
 
-    // Receive remote tracks
     connection.ontrack = (event) => {
       peer!.remoteStream = event.streams[0] || new MediaStream([event.track]);
       this.startAudioLevelMonitor(peer!);
       this.onPeersChanged();
     };
 
-    // Monitor connection state for auto-reconnect
+    // Handle renegotiation needed (e.g. when tracks added after connection)
+    connection.onnegotiationneeded = async () => {
+      if (connection.signalingState !== 'stable') return;
+      try {
+        const offer = await connection.createOffer();
+        await connection.setLocalDescription(offer);
+        this.socket.sendVoiceOffer(peerId, offer);
+      } catch (e) {
+        console.warn('[voice] Auto-negotiation failed for', peerId, e);
+      }
+    };
+
     connection.onconnectionstatechange = () => {
       const s = connection.connectionState;
-      console.log(`[voice] Peer ${peerId} connection: ${s}`);
+      console.log(`[voice] Peer ${peerId}: ${s}`);
       if (s === 'failed') {
-        // Tear down and retry
         this.removePeer(peerId);
         if (this.localStream) {
-          setTimeout(() => this.initiateConnection(peerId), 1000);
+          setTimeout(() => this.initiateConnection(peerId), 2000);
         }
       }
     };
 
-    // Add local tracks
+    // Add local tracks if available
     if (this.localStream) {
       for (const track of this.localStream.getTracks()) {
         connection.addTrack(track, this.localStream);
@@ -222,26 +264,21 @@ export class VoiceChatManager {
 
   private startAudioLevelMonitor(peer: PeerInfo) {
     if (!peer.remoteStream) return;
-
     try {
       const ctx = new AudioContext();
       const source = ctx.createMediaStreamSource(peer.remoteStream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
-
       const data = new Uint8Array(analyser.frequencyBinCount);
       const monitor = () => {
         if (!this.peers.has(peer.id)) return;
         analyser.getByteFrequencyData(data);
-        const avg = data.reduce((sum, v) => sum + v, 0) / data.length;
-        peer.audioLevel = avg / 255;
+        peer.audioLevel = data.reduce((sum, v) => sum + v, 0) / data.length / 255;
         requestAnimationFrame(monitor);
       };
       monitor();
-    } catch {
-      // AudioContext may not be available
-    }
+    } catch { /* AudioContext not available */ }
   }
 
   toggleMute(): boolean {
