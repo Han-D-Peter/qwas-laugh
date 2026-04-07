@@ -255,7 +255,8 @@ export function App() {
 
   // ─── Touch Controls ─────────────────────────────────────────
 
-  const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window;
+  const isTouchDevice = typeof window !== 'undefined' &&
+    ('ontouchstart' in window || window.innerWidth <= 768);
 
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myDirection: AnyDirection | null = myPlayer?.assignedDirection ?? null;

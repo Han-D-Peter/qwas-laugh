@@ -64,8 +64,8 @@ export function HUD({
         <div style={pillStyle}>Coin:{coins}</div>
       </div>
 
-      {/* Keyboard controls hint — hidden on touch devices */}
-      {'ontouchstart' in globalThis ? null : (
+      {/* Keyboard controls hint — hidden on touch/mobile devices */}
+      {('ontouchstart' in globalThis || (typeof window !== 'undefined' && window.innerWidth <= 768)) ? null : (
         <div style={{
           position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
           ...pillStyle, fontSize: 11, opacity: 0.6,
