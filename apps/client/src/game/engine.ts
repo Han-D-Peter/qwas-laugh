@@ -546,11 +546,23 @@ export class GameEngine {
    */
   setRemoteMode() {
     this.remoteMode = true;
-    // Remove local input handler if it was set
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
       this.keyHandler = null;
     }
+  }
+
+  /**
+   * Receive overlap result from server (multiplayer).
+   */
+  setServerOverlap(phase: string, overlapPercent: number) {
+    this.lastOverlap = overlapPercent;
+    if (phase === 'phase1') {
+      this.probabilityA = overlapPercent / 100;
+    } else if (phase === 'phase2') {
+      this.probabilityB = overlapPercent / 100;
+    }
+    this.updateInfo();
   }
 
   /**
@@ -566,6 +578,10 @@ export class GameEngine {
     this.level = state.level;
     this.coins = state.coins;
     this.lastResult = state.lastResult;
+
+    // Sync probabilities from server
+    if (state.probabilityA > 0) this.probabilityA = state.probabilityA;
+    if (state.probabilityB > 0) this.probabilityB = state.probabilityB;
 
     // Phase 1 rendering from server state
     if (state.phase === 'phase1' && state.maze) {

@@ -307,6 +307,12 @@ export class GameLoopManager {
     const overlap = calculateOverlap(clawBox, dollBox);
     game.room.gameState.probabilityA = overlap;
 
+    // Broadcast the overlap result to all players
+    this.io.to(game.room.code).emit('game:overlap', {
+      phase: 'phase1',
+      overlap: Math.round(overlap * 100),
+    });
+
     if (overlap < OVERLAP_THRESHOLD) {
       this.failAndResetToPhase1(game);
     } else {
@@ -333,6 +339,12 @@ export class GameLoopManager {
 
     const overlap = calculateOverlap(clawBox, dollBox);
     game.room.gameState.probabilityB = overlap;
+
+    // Broadcast the overlap result to all players
+    this.io.to(game.room.code).emit('game:overlap', {
+      phase: 'phase2',
+      overlap: Math.round(overlap * 100),
+    });
 
     if (overlap < OVERLAP_THRESHOLD) {
       this.failAndResetToPhase1(game);
