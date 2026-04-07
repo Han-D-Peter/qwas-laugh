@@ -22,6 +22,12 @@ export interface GameInfo {
   suspensePhase: string;
   probabilityA: number;
   probabilityB: number;
+  /** Phase 2 left player ID (null = not assigned) */
+  p2LeftPlayerId: string | null;
+  /** Phase 2 right player ID (null = not assigned) */
+  p2RightPlayerId: string | null;
+  /** Phase 2 countdown seconds remaining */
+  p2Countdown: number;
 }
 
 type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' | 'suspense' | 'result';
@@ -57,6 +63,8 @@ export class GameEngine {
   private p2DriftTime = 0;
   private p2Countdown = 0;
   private probabilityB = 0;
+  private p2LeftPlayerId: string | null = null;
+  private p2RightPlayerId: string | null = null;
 
   // Shared
   private animFrame = 0;
@@ -255,12 +263,18 @@ export class GameEngine {
     this.p2DriftOffset = 0;
     this.p2DriftTime = 0;
 
+    // In local mode, randomly assign left/right to 2 virtual players
+    if (!this.remoteMode) {
+      this.p2LeftPlayerId = 'local-left';
+      this.p2RightPlayerId = 'local-right';
+    }
+
     this.phase1Scene.hide();
     this.phase2Scene.show();
     this.phase2Scene.buildPath(this.p2Path, this.level % 30);
     this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
 
-    // Countdown before controls activate
+    // Countdown with role display
     this.phase = 'phase2_countdown';
     this.p2Countdown = 3;
     this.updateInfo();
@@ -275,6 +289,13 @@ export class GameEngine {
         this.updateInfo();
       }
     }, 1000);
+  }
+
+  /** Called by App when server announces Phase 2 player assignments */
+  setPhase2Players(leftId: string, rightId: string) {
+    this.p2LeftPlayerId = leftId;
+    this.p2RightPlayerId = rightId;
+    this.updateInfo();
   }
 
   // ─── Phase 2 Grab ──────────────────────────────────────────────
@@ -491,6 +512,9 @@ export class GameEngine {
       suspensePhase: this.suspensePhase,
       probabilityA: Math.round(this.probabilityA * 100),
       probabilityB: Math.round(this.probabilityB * 100),
+      p2LeftPlayerId: this.p2LeftPlayerId,
+      p2RightPlayerId: this.p2RightPlayerId,
+      p2Countdown: this.p2Countdown,
     });
   }
 

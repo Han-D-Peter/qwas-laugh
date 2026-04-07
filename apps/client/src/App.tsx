@@ -41,6 +41,9 @@ export function App() {
     suspensePhase: '' as string,
     probabilityA: 0,
     probabilityB: 0,
+    p2LeftPlayerId: null as string | null,
+    p2RightPlayerId: null as string | null,
+    p2Countdown: 0,
   });
 
   // ─── Local Game ─────────────────────────────────────────────
@@ -128,17 +131,16 @@ export function App() {
       } else if (state.phase !== 'lobby') {
         setAppMode('multiplayer');
         setPauseMessage(null);
-        setGameInfo({
+        setGameInfo(prev => ({
+          ...prev,
           level: state.level,
           coins: state.coins,
           phase: state.phase,
           overlapPercent: 0,
           lastResult: state.lastResult,
-          suspenseProgress: 0,
-          suspensePhase: '',
           probabilityA: Math.round(state.probabilityA * 100),
           probabilityB: Math.round(state.probabilityB * 100),
-        });
+        }));
       }
     });
 
@@ -148,6 +150,14 @@ export function App() {
     });
     gs.rawSocket.on('game:resumed', () => {
       setPauseMessage(null);
+    });
+
+    // Listen for Phase 2 player assignments
+    gs.rawSocket.on('game:phase-change', ({ phase, data }: { phase: string; data: any }) => {
+      if (phase === 'phase2' && data?.p2Players) {
+        const [leftId, rightId] = data.p2Players;
+        engineRef.current?.setPhase2Players(leftId, rightId);
+      }
     });
 
     gs.connect();
@@ -303,6 +313,11 @@ export function App() {
         suspensePhase={gameInfo.suspensePhase}
         probabilityA={gameInfo.probabilityA}
         probabilityB={gameInfo.probabilityB}
+        p2LeftPlayerId={gameInfo.p2LeftPlayerId}
+        p2RightPlayerId={gameInfo.p2RightPlayerId}
+        p2Countdown={gameInfo.p2Countdown}
+        myPlayerId={myPlayerId}
+        playerNames={playerNames}
         onRestart={handleRestart}
       />
       {appMode === 'multiplayer' && myPlayerId && (

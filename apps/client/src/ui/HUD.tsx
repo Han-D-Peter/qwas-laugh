@@ -10,6 +10,11 @@ interface HUDProps {
   suspensePhase?: string;
   probabilityA?: number;
   probabilityB?: number;
+  p2LeftPlayerId?: string | null;
+  p2RightPlayerId?: string | null;
+  p2Countdown?: number;
+  myPlayerId?: string | null;
+  playerNames?: Map<string, string>;
   onRestart: () => void;
 }
 
@@ -27,6 +32,8 @@ export function HUD({
   level, coins, phase, overlapPercent, lastResult,
   suspenseProgress = 0, suspensePhase = '',
   probabilityA = 0, probabilityB = 0,
+  p2LeftPlayerId, p2RightPlayerId, p2Countdown = 0,
+  myPlayerId, playerNames,
   onRestart,
 }: HUDProps) {
   const [showResult, setShowResult] = useState(false);
@@ -101,12 +108,75 @@ export function HUD({
         </div>
       )}
 
-      {/* Phase 2 countdown */}
-      {phase === 'phase2_countdown' && (
-        <div style={centerOverlay}>
-          <div style={{ fontSize: 18, color: '#8b7bb5' }}>좌/우 키를 준비하세요!</div>
-        </div>
-      )}
+      {/* Phase 2 countdown — show role assignment */}
+      {phase === 'phase2_countdown' && (() => {
+        const getName = (id: string | null | undefined) =>
+          id && playerNames?.get(id) || id?.slice(0, 6) || '?';
+        const isLeft = myPlayerId && p2LeftPlayerId === myPlayerId;
+        const isRight = myPlayerId && p2RightPlayerId === myPlayerId;
+        const isAssigned = isLeft || isRight;
+        const isLocal = !myPlayerId; // local single-player
+
+        return (
+          <div style={centerOverlay}>
+            <div style={{ fontSize: 22, fontWeight: 'bold', color: '#6b5b95', marginBottom: 12 }}>
+              Phase 2 시작!
+            </div>
+
+            {/* Role assignment display */}
+            <div style={{
+              display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 16,
+            }}>
+              <div style={{
+                ...roleBoxStyle,
+                background: isLeft ? 'rgba(46, 204, 113, 0.15)' : 'rgba(155, 142, 196, 0.08)',
+                border: isLeft ? '2px solid #2ecc71' : '1px solid rgba(155,142,196,0.2)',
+              }}>
+                <span style={{ fontSize: 11, color: '#8b7bb5' }}>좌 담당</span>
+                <span style={{ fontSize: 22, marginTop: 2 }}>⬅️</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: isLeft ? '#2ecc71' : '#4a3f6b' }}>
+                  {isLocal ? '플레이어' : getName(p2LeftPlayerId)}
+                </span>
+                {isLeft && <span style={{ fontSize: 11, color: '#2ecc71', fontWeight: 700 }}>나!</span>}
+              </div>
+              <div style={{
+                ...roleBoxStyle,
+                background: isRight ? 'rgba(243, 156, 18, 0.15)' : 'rgba(155, 142, 196, 0.08)',
+                border: isRight ? '2px solid #f39c12' : '1px solid rgba(155,142,196,0.2)',
+              }}>
+                <span style={{ fontSize: 11, color: '#8b7bb5' }}>우 담당</span>
+                <span style={{ fontSize: 22, marginTop: 2 }}>➡️</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: isRight ? '#f39c12' : '#4a3f6b' }}>
+                  {isLocal ? '플레이어' : getName(p2RightPlayerId)}
+                </span>
+                {isRight && <span style={{ fontSize: 11, color: '#f39c12', fontWeight: 700 }}>나!</span>}
+              </div>
+            </div>
+
+            {/* My role message */}
+            {!isLocal && (
+              <div style={{
+                fontSize: 20, fontWeight: 'bold',
+                color: isAssigned ? '#4a3f6b' : '#8b7bb5',
+                marginBottom: 12,
+                animation: 'pop-in 0.4s ease-out',
+              }}>
+                {isLeft ? '당신은 ⬅️ 좌 담당!' :
+                 isRight ? '당신은 ➡️ 우 담당!' :
+                 '휴 살았다.. 🎉'}
+              </div>
+            )}
+
+            {/* Countdown */}
+            <div style={{
+              fontSize: 48, fontWeight: 'bold', color: '#6b5b95',
+              animation: 'pulse 0.6s ease-in-out infinite',
+            }}>
+              {p2Countdown > 0 ? p2Countdown : 'GO!'}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ─── Suspense Sequence ─── */}
       {phase === 'suspense' && (
@@ -314,4 +384,13 @@ const probBoxSmall: React.CSSProperties = {
   padding: '8px 14px',
   borderRadius: 10,
   background: 'rgba(155, 142, 196, 0.08)',
+};
+
+const roleBoxStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: '12px 20px',
+  borderRadius: 14,
+  minWidth: 100,
 };
