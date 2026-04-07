@@ -139,14 +139,16 @@ export function VoiceControls({ voiceManager, playerNames, playerIds = [] }: Voi
 
 const containerStyle: React.CSSProperties = {
   position: 'absolute',
-  bottom: 50,
+  top: 60,
   right: 16,
   background: 'rgba(255,255,255,0.92)',
   borderRadius: 16,
   padding: '12px 14px',
   boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
   backdropFilter: 'blur(8px)',
-  minWidth: 160,
+  minWidth: 140,
+  maxWidth: 180,
+  zIndex: 30,
 };
 
 const voiceBtnStyle: React.CSSProperties = {

@@ -7,6 +7,8 @@ interface TouchControlsProps {
   onDirection: (dir: 'up' | 'down' | 'left' | 'right') => void;
   onGrab: () => void;
   phase: string;
+  /** Only host can grab */
+  isHost: boolean;
 }
 
 const DIR_COLORS: Record<string, string> = {
@@ -21,7 +23,7 @@ const DIR_LABELS: Record<string, string> = {
   'up-left': '좌상', 'up-right': '우상', 'down-left': '좌하', 'down-right': '우하',
 };
 
-export function TouchControls({ myDirection, onDirection, onGrab, phase }: TouchControlsProps) {
+export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost }: TouchControlsProps) {
   const press = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     onDirection(dir);
   }, [onDirection]);
@@ -48,14 +50,20 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase }: Touch
           onPress={() => press('left')}
           style={{ gridArea: 'left' }}
         />
-        {/* Grab button (center) */}
-        <button
-          onTouchStart={(e) => { e.preventDefault(); onGrab(); }}
-          onMouseDown={onGrab}
-          style={grabBtnStyle}
-        >
-          집기
-        </button>
+        {/* Grab button (center) — host only */}
+        {isHost ? (
+          <button
+            onTouchStart={(e) => { e.preventDefault(); onGrab(); }}
+            onMouseDown={onGrab}
+            style={grabBtnStyle}
+          >
+            집기
+          </button>
+        ) : (
+          <div style={{ ...grabBtnStyle, background: 'rgba(155,142,196,0.2)', fontSize: 10, color: '#8b7bb5' }}>
+            방장만
+          </div>
+        )}
         {/* Right */}
         <DirButton
           dir="right"

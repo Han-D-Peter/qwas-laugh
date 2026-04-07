@@ -338,6 +338,7 @@ export function App() {
           onDirection={handleTouchDirection}
           onGrab={handleTouchGrab}
           phase={gameInfo.phase}
+          isHost={appMode === 'local' || isHost}
         />
       )}
       {/* Room code badge (multiplayer) */}

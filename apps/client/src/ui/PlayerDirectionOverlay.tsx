@@ -59,28 +59,23 @@ export function PlayerDirectionOverlay({ players, myPlayerId }: PlayerDirectionO
 
         return (
           <div key={p.id} style={{
-            ...playerRowStyle,
-            borderLeft: `4px solid ${color}`,
-            background: isMe ? 'rgba(126, 203, 245, 0.15)' : 'transparent',
+            ...playerCardStyle,
+            borderBottom: `3px solid ${color}`,
+            background: isMe ? 'rgba(126, 203, 245, 0.15)' : 'rgba(255,255,255,0.6)',
           }}>
-            <ArrowIcon direction={p.assignedDirection} color={color} size={26} />
-            <div style={{ flex: 1, marginLeft: 8 }}>
-              <div style={{
-                fontSize: 14,
-                fontWeight: isMe ? 800 : 600,
-                color: '#4a3f6b',
-              }}>
-                {p.name}
-                {isMe && <span style={{ color, marginLeft: 4, fontSize: 11 }}>(나)</span>}
-              </div>
-              <div style={{
-                fontSize: 11,
-                color: color,
-                fontWeight: 700,
-              }}>
-                {DIRECTION_LABELS[p.assignedDirection] || p.assignedDirection}
-                {p.isHost ? ' · 방장' : ''}
-              </div>
+            <ArrowIcon direction={p.assignedDirection} color={color} size={20} />
+            <div style={{
+              fontSize: 12,
+              fontWeight: isMe ? 800 : 600,
+              color: '#4a3f6b',
+              lineHeight: 1.2,
+            }}>
+              {p.name}
+              {isMe && <span style={{ color, fontSize: 9 }}>(나)</span>}
+            </div>
+            <div style={{ fontSize: 10, color, fontWeight: 700 }}>
+              {DIRECTION_LABELS[p.assignedDirection] || p.assignedDirection}
+              {p.isHost ? ' · 방장' : ''}
             </div>
           </div>
         );
@@ -91,20 +86,25 @@ export function PlayerDirectionOverlay({ players, myPlayerId }: PlayerDirectionO
 
 const containerStyle: React.CSSProperties = {
   position: 'absolute',
-  top: 60,
-  left: 16,
-  background: 'rgba(255, 255, 255, 0.92)',
-  borderRadius: 16,
-  padding: '10px 12px',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+  top: 44,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  display: 'flex',
+  gap: 6,
+  padding: '4px',
+  borderRadius: 14,
+  background: 'rgba(255, 255, 255, 0.88)',
+  boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
   backdropFilter: 'blur(8px)',
-  minWidth: 170,
+  zIndex: 5,
 };
 
-const playerRowStyle: React.CSSProperties = {
+const playerCardStyle: React.CSSProperties = {
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   padding: '6px 10px',
   borderRadius: 10,
-  marginBottom: 4,
+  minWidth: 60,
+  gap: 2,
 };
