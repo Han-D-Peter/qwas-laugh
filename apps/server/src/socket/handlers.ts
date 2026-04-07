@@ -28,16 +28,26 @@ export function setupSocketHandlers(io: Server) {
         socket.emit('room:error', { message: result.error });
         return;
       }
-      const { room, playerId } = result;
+      const { room, playerId, rejoined } = result;
       socket.join(room.code);
       socket.emit('room:joined', { playerId, code: room.code, state: room.gameState });
       socket.to(room.code).emit('room:player-joined', { playerName, playerId });
+
+      // Check if rejoining completes the party and should resume
+      if (rejoined) {
+        const resumePhase = roomManager.checkResume(room.code);
+        if (resumePhase) {
+          io.to(room.code).emit('game:resumed', { phase: resumePhase });
+          gameLoop.resumeGame(room.code);
+        }
+      }
+
       io.to(room.code).emit('game:state', room.gameState);
     });
 
     // ─── Room: Leave ───────────────────────────────────────
     socket.on('room:leave', () => {
-      handleLeave(socket);
+      handleDisconnect(socket);
     });
 
     // ─── Game: Start ───────────────────────────────────────
@@ -90,17 +100,28 @@ export function setupSocketHandlers(io: Server) {
     // ─── Disconnect ────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log(`[disconnect] ${socket.id}`);
-      handleLeave(socket);
+      handleDisconnect(socket);
     });
 
-    function handleLeave(sock: Socket) {
-      const result = roomManager.leaveRoom(sock.id);
+    function handleDisconnect(sock: Socket) {
+      const result = roomManager.disconnectPlayer(sock.id);
       if (!result) return;
 
       if (result.destroyed) {
         gameLoop.stopGame(result.room.code);
       } else {
-        sock.to(result.room.code).emit('room:player-left', { playerId: sock.id });
+        sock.to(result.room.code).emit('room:player-left', {
+          playerId: sock.id,
+          disconnectedName: result.disconnectedName,
+        });
+
+        if (result.shouldPause) {
+          gameLoop.pauseGame(result.room.code);
+          io.to(result.room.code).emit('game:paused', {
+            reason: `${result.disconnectedName}님의 연결이 끊겼습니다. 재접속 대기 중...`,
+          });
+        }
+
         io.to(result.room.code).emit('game:state', result.room.gameState);
       }
     }

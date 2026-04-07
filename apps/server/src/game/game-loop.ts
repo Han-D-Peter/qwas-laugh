@@ -123,6 +123,21 @@ export class GameLoopManager {
     }
   }
 
+  pauseGame(roomCode: string) {
+    const game = this.games.get(roomCode);
+    if (game) {
+      clearInterval(game.intervalId);
+      game.intervalId = null as any;
+    }
+  }
+
+  resumeGame(roomCode: string) {
+    const game = this.games.get(roomCode);
+    if (game && !game.intervalId) {
+      game.intervalId = setInterval(() => this.tick(roomCode), TICK_INTERVAL);
+    }
+  }
+
   handleInput(roomCode: string, playerId: string, direction: AnyDirection) {
     const game = this.games.get(roomCode);
     if (!game) return;

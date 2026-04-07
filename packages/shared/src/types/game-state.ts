@@ -1,4 +1,4 @@
-export type GamePhase = 'lobby' | 'phase1' | 'phase2' | 'grab_attempt' | 'result';
+export type GamePhase = 'lobby' | 'phase1' | 'phase2' | 'grab_attempt' | 'result' | 'paused';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 export type DiagonalDirection = 'up-left' | 'up-right' | 'down-left' | 'down-right';

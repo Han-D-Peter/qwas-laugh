@@ -27,6 +27,7 @@ export function App() {
   const voiceRef = useRef<VoiceChatManager | null>(null);
   const [voiceManager, setVoiceManager] = useState<VoiceChatManager | null>(null);
   const [playerNames, setPlayerNames] = useState<Map<string, string>>(new Map());
+  const [pauseMessage, setPauseMessage] = useState<string | null>(null);
 
   const [gameInfo, setGameInfo] = useState({
     level: 1,
@@ -111,15 +112,18 @@ export function App() {
 
     gs.onState((state: GameState) => {
       setPlayers([...state.players]);
-      // Update player name map for voice controls
       const names = new Map<string, string>();
       for (const p of state.players) {
         names.set(p.id, p.name);
       }
       setPlayerNames(names);
-      if (state.phase !== 'lobby') {
-        // Game has started — switch to multiplayer game view
+
+      if (state.phase === 'paused') {
         setAppMode('multiplayer');
+        // Keep pause overlay visible
+      } else if (state.phase !== 'lobby') {
+        setAppMode('multiplayer');
+        setPauseMessage(null);
         setGameInfo({
           level: state.level,
           coins: state.coins,
@@ -130,6 +134,14 @@ export function App() {
           suspensePhase: '',
         });
       }
+    });
+
+    // Listen for pause/resume events
+    gs.rawSocket.on('game:paused', ({ reason }: { reason: string }) => {
+      setPauseMessage(reason);
+    });
+    gs.rawSocket.on('game:resumed', () => {
+      setPauseMessage(null);
     });
 
     gs.connect();
@@ -269,6 +281,60 @@ export function App() {
           playerNames={playerNames}
           playerIds={players.map(p => p.id)}
         />
+      )}
+      {/* Room code badge (multiplayer) */}
+      {appMode === 'multiplayer' && roomCode && (
+        <div style={{
+          position: 'absolute', bottom: 16, left: 16,
+          background: 'rgba(255,255,255,0.85)',
+          borderRadius: 10, padding: '5px 12px',
+          fontSize: 11, color: '#8b7bb5',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        }}>
+          코드: <span style={{ fontWeight: 700, color: '#4a3f6b', letterSpacing: 2, fontFamily: 'monospace' }}>{roomCode}</span>
+        </div>
+      )}
+      {/* Pause overlay */}
+      {pauseMessage && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(40, 35, 55, 0.55)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          zIndex: 100,
+          backdropFilter: 'blur(3px)',
+        }}>
+          {/* Spinner */}
+          <div style={{
+            width: 48, height: 48,
+            border: '4px solid rgba(255,255,255,0.3)',
+            borderTopColor: '#fff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: 20,
+          }} />
+          <div style={{
+            color: '#fff', fontSize: 18, fontWeight: 600,
+            textAlign: 'center', maxWidth: 320,
+          }}>
+            {pauseMessage}
+          </div>
+          {roomCode && (
+            <div style={{
+              marginTop: 16, padding: '8px 20px',
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: 10, color: '#fff', fontSize: 13,
+            }}>
+              접속 코드: <span style={{ fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', fontSize: 18 }}>{roomCode}</span>
+            </div>
+          )}
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
       )}
     </div>
   );
