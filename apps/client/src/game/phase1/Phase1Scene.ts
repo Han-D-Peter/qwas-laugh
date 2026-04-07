@@ -10,9 +10,11 @@ export class Phase1Scene {
   private bgGraphics: Graphics;
   private mazeGraphics: Graphics;
   private clawContainer: Container;
+  private clawBoxGraphics: Graphics;
   private dollContainer: Container;
   private dollBoxGraphics: Graphics;
   private obstacleContainer: Container;
+  private showClawBox = false;
 
   constructor(parent: Container) {
     this.parent = parent;
@@ -20,6 +22,7 @@ export class Phase1Scene {
     this.bgGraphics = new Graphics();
     this.mazeGraphics = new Graphics();
     this.clawContainer = new Container();
+    this.clawBoxGraphics = new Graphics();
     this.dollContainer = new Container();
     this.dollBoxGraphics = new Graphics();
     this.obstacleContainer = new Container();
@@ -29,6 +32,7 @@ export class Phase1Scene {
     this.container.addChild(this.obstacleContainer);
     this.container.addChild(this.dollContainer);
     this.container.addChild(this.dollBoxGraphics);
+    this.container.addChild(this.clawBoxGraphics);
     this.container.addChild(this.clawContainer);
     parent.addChild(this.container);
   }
@@ -122,9 +126,27 @@ export class Phase1Scene {
     }
   }
 
+  setShowClawBox(show: boolean) {
+    this.showClawBox = show;
+    if (!show) this.clawBoxGraphics.clear();
+  }
+
   setClaw(pos: Vec2) {
     this.clawContainer.x = pos.x;
     this.clawContainer.y = pos.y;
+
+    // Show claw bounding box for early levels (training)
+    if (this.showClawBox) {
+      this.clawBoxGraphics.clear();
+      this.clawBoxGraphics.rect(
+        pos.x - CLAW_BOX_SIZE / 2,
+        pos.y - CLAW_BOX_SIZE / 2,
+        CLAW_BOX_SIZE,
+        CLAW_BOX_SIZE,
+      );
+      this.clawBoxGraphics.setStrokeStyle({ width: 1.5, color: 0x7ecbf5, alpha: 0.6 });
+      this.clawBoxGraphics.stroke();
+    }
   }
 
   setDoll(pos: Vec2, type: number) {

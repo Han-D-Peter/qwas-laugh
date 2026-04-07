@@ -147,6 +147,7 @@ export class GameEngine {
 
     this.phase1Scene.buildMaze(this.maze);
     this.phase1Scene.setDoll(this.dollPos, level % 30);
+    this.phase1Scene.setShowClawBox(level <= 5);
     this.phase1Scene.setClaw(this.clawPos);
     this.phase1Scene.show();
     this.phase2Scene.hide();
@@ -573,6 +574,7 @@ export class GameEngine {
         this.config = getDifficultyConfig(state.level);
         this.phase1Scene.buildMaze(state.maze);
         this.phase1Scene.setDoll(state.doll.position, state.doll.type);
+        this.phase1Scene.setShowClawBox(state.level <= 5);
         this.phase1Scene.show();
         this.phase2Scene.hide();
         this.obstacleManager.spawn(state.level, state.maze, state.maze.seed);

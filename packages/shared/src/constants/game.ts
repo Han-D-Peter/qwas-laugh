@@ -1,8 +1,8 @@
 export const TICK_RATE = 20; // server ticks per second
 export const TICK_INTERVAL = 1000 / TICK_RATE;
 export const CELL_SIZE = 60; // pixels per maze cell
-export const CLAW_BOX_SIZE = 30;
-export const DOLL_BOX_SIZE = 30;
+export const CLAW_BOX_SIZE = 36;
+export const DOLL_BOX_SIZE = 34;
 export const OVERLAP_THRESHOLD = 0.10; // 10% minimum overlap
 export const MAX_LEVEL = 30;
 export const ROOM_CODE_LENGTH = 4;
