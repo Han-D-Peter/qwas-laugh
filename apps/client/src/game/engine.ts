@@ -55,11 +55,26 @@ export class GameEngine {
   }
 
   private async init() {
-    await this.app.init({
-      resizeTo: this.container,
-      background: '#e8dff5',
-      antialias: true,
-    });
+    const width = this.container.clientWidth || 800;
+    const height = this.container.clientHeight || 600;
+    try {
+      await this.app.init({
+        width,
+        height,
+        background: '#e8dff5',
+        antialias: true,
+      });
+    } catch {
+      // Fallback: try without antialias
+      await this.app.init({
+        width,
+        height,
+        background: '#e8dff5',
+        antialias: false,
+      });
+    }
+    this.app.canvas.style.width = '100%';
+    this.app.canvas.style.height = '100%';
     this.container.appendChild(this.app.canvas);
 
     this.worldContainer = new Container();
@@ -260,6 +275,10 @@ export class GameEngine {
   destroy() {
     this.destroyed = true;
     this.running = false;
-    this.app.destroy(true);
+    try {
+      this.app.destroy(true);
+    } catch {
+      // PixiJS may throw during destroy if init didn't complete
+    }
   }
 }

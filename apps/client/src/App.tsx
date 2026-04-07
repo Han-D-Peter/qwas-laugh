@@ -5,6 +5,7 @@ import { HUD } from './ui/HUD.js';
 export function App() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
+  const mountedRef = useRef(false);
   const [gameInfo, setGameInfo] = useState({
     level: 1,
     coins: 0,
@@ -14,7 +15,8 @@ export function App() {
   });
 
   useEffect(() => {
-    if (!canvasContainerRef.current) return;
+    if (!canvasContainerRef.current || mountedRef.current) return;
+    mountedRef.current = true;
 
     const engine = new GameEngine(canvasContainerRef.current, (info) => {
       setGameInfo(info);
@@ -22,6 +24,7 @@ export function App() {
     engineRef.current = engine;
 
     return () => {
+      mountedRef.current = false;
       engine.destroy();
     };
   }, []);
