@@ -111,6 +111,22 @@ export class GameSocket {
     this.socket.emit('player:grab');
   }
 
+  // Voice signaling
+  sendVoiceOffer(targetId: string, offer: RTCSessionDescriptionInit) {
+    this.socket.emit('voice:offer', { targetId, offer });
+  }
+
+  sendVoiceAnswer(targetId: string, answer: RTCSessionDescriptionInit) {
+    this.socket.emit('voice:answer', { targetId, answer });
+  }
+
+  sendVoiceIceCandidate(targetId: string, candidate: RTCIceCandidateInit) {
+    this.socket.emit('voice:ice-candidate', { targetId, candidate });
+  }
+
+  /** Expose internal socket for voice signaling listeners */
+  get rawSocket(): { on: (event: string, cb: (...args: any[]) => void) => void } { return this.socket; }
+
   // Callbacks
   onState(cb: (state: GameState) => void) { this.onStateUpdate = cb; }
   onRoom(cb: (event: string, data: any) => void) { this.onRoomEvent = cb; }

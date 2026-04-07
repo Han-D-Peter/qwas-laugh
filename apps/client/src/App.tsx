@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine } from './game/engine.js';
 import { GameSocket } from './network/socket.js';
+import { VoiceChatManager } from './voice/webrtc.js';
 import { HUD } from './ui/HUD.js';
 import { Lobby } from './ui/Lobby.js';
+import { VoiceControls } from './ui/VoiceControls.js';
 import type { GameState, PlayerState } from '@qwas/shared';
 
 type AppMode = 'lobby' | 'local' | 'multiplayer';
@@ -21,6 +23,9 @@ export function App() {
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const voiceRef = useRef<VoiceChatManager | null>(null);
+  const [voiceManager, setVoiceManager] = useState<VoiceChatManager | null>(null);
+  const [playerNames, setPlayerNames] = useState<Map<string, string>>(new Map());
 
   const [gameInfo, setGameInfo] = useState({
     level: 1,
@@ -69,14 +74,32 @@ export function App() {
           setMyPlayerId(data.playerId);
           setIsHost(true);
           setLobbyMode('waiting');
+          // Initialize voice chat manager
+          if (!voiceRef.current) {
+            const vm = new VoiceChatManager(gs, () => setVoiceManager(vm));
+            voiceRef.current = vm;
+            setVoiceManager(vm);
+          }
           break;
         case 'room:joined':
           setMyPlayerId(data.playerId);
           setLobbyMode('waiting');
+          if (!voiceRef.current) {
+            const vm = new VoiceChatManager(gs, () => setVoiceManager(vm));
+            voiceRef.current = vm;
+            setVoiceManager(vm);
+          }
           break;
         case 'room:player-joined':
+          // Connect voice to new peer
+          if (voiceRef.current && data.playerId) {
+            voiceRef.current.connectToPeer(data.playerId);
+          }
+          break;
         case 'room:player-left':
-          // State update will follow via game:state
+          if (voiceRef.current && data.playerId) {
+            voiceRef.current.removePeer(data.playerId);
+          }
           break;
         case 'room:error':
           setError(data.message);
@@ -86,6 +109,12 @@ export function App() {
 
     gs.onState((state: GameState) => {
       setPlayers([...state.players]);
+      // Update player name map for voice controls
+      const names = new Map<string, string>();
+      for (const p of state.players) {
+        names.set(p.id, p.name);
+      }
+      setPlayerNames(names);
       if (state.phase !== 'lobby') {
         // Game has started — switch to multiplayer game view
         setAppMode('multiplayer');
@@ -243,6 +272,9 @@ export function App() {
             </div>
           ))}
         </div>
+      )}
+      {appMode === 'multiplayer' && (
+        <VoiceControls voiceManager={voiceManager} playerNames={playerNames} />
       )}
     </div>
   );
