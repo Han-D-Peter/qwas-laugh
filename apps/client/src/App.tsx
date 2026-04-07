@@ -351,15 +351,20 @@ export function App() {
       )}
       {/* Room code badge (multiplayer) */}
       {appMode === 'multiplayer' && roomCode && (
-        <div style={{
-          position: 'absolute', bottom: 16, left: 16,
-          background: 'rgba(255,255,255,0.85)',
-          borderRadius: 10, padding: '5px 12px',
-          fontSize: 11, color: '#8b7bb5',
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}>
+        <div
+          onClick={() => { navigator.clipboard.writeText(roomCode); }}
+          title="클릭하여 복사"
+          style={{
+            position: 'absolute', bottom: 16, left: 16,
+            background: 'rgba(255,255,255,0.85)',
+            borderRadius: 10, padding: '5px 12px',
+            fontSize: 11, color: '#8b7bb5',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            cursor: 'pointer', userSelect: 'none',
+          }}>
           코드: <span style={{ fontWeight: 700, color: '#4a3f6b', letterSpacing: 2, fontFamily: 'monospace' }}>{roomCode}</span>
+          <span style={{ marginLeft: 6, fontSize: 10 }}>📋</span>
         </div>
       )}
       {/* Pause overlay */}
@@ -388,12 +393,16 @@ export function App() {
             {pauseMessage}
           </div>
           {roomCode && (
-            <div style={{
-              marginTop: 16, padding: '8px 20px',
-              background: 'rgba(255,255,255,0.15)',
-              borderRadius: 10, color: '#fff', fontSize: 13,
-            }}>
+            <div
+              onClick={() => { navigator.clipboard.writeText(roomCode); }}
+              style={{
+                marginTop: 16, padding: '8px 20px',
+                background: 'rgba(255,255,255,0.15)',
+                borderRadius: 10, color: '#fff', fontSize: 13,
+                cursor: 'pointer', userSelect: 'none',
+              }}>
               접속 코드: <span style={{ fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', fontSize: 18 }}>{roomCode}</span>
+              <span style={{ marginLeft: 8, fontSize: 14 }}>📋</span>
             </div>
           )}
           <style>{`

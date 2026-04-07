@@ -91,7 +91,14 @@ export function Lobby({
           <>
             <div style={{ margin: '16px 0' }}>
               <div style={{ color: '#8b7bb5', fontSize: 13, marginBottom: 4 }}>접속 코드</div>
-              <div style={codeDisplayStyle}>{roomCode}</div>
+              <div
+                onClick={() => { navigator.clipboard.writeText(roomCode!); }}
+                title="클릭하여 복사"
+                style={{ ...codeDisplayStyle, cursor: 'pointer', position: 'relative' }}
+              >
+                {roomCode}
+                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 18, opacity: 0.6 }}>📋</span>
+              </div>
             </div>
 
             <div style={{ marginBottom: 16 }}>
