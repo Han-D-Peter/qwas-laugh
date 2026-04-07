@@ -4,9 +4,11 @@ import type { VoiceChatManager, PeerInfo } from '../voice/webrtc.js';
 interface VoiceControlsProps {
   voiceManager: VoiceChatManager | null;
   playerNames: Map<string, string>;
+  /** All player IDs currently in the room */
+  playerIds?: string[];
 }
 
-export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps) {
+export function VoiceControls({ voiceManager, playerNames, playerIds = [] }: VoiceControlsProps) {
   const [muted, setMuted] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [peers, setPeers] = useState<PeerInfo[]>([]);
@@ -27,7 +29,7 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
   const handleToggleVoice = async () => {
     if (!voiceManager) return;
     if (!enabled) {
-      const ok = await voiceManager.start();
+      const ok = await voiceManager.start(playerIds);
       if (ok) setEnabled(true);
     }
   };

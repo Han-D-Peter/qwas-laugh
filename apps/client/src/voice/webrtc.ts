@@ -18,6 +18,8 @@ export class VoiceChatManager {
   private socket: GameSocket;
   private muted = false;
   private onPeersChanged: () => void;
+  /** Peer IDs we should connect to once localStream is available */
+  private pendingPeers = new Set<string>();
 
   constructor(socket: GameSocket, onPeersChanged: () => void) {
     this.socket = socket;
@@ -26,64 +28,111 @@ export class VoiceChatManager {
   }
 
   private setupSignaling() {
-    // Receive offer from another peer
     this.socket.rawSocket.on('voice:offer',
       async ({ fromId, offer }: { fromId: string; offer: RTCSessionDescriptionInit }) => {
         const peer = this.getOrCreatePeer(fromId);
-        await peer.connection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peer.connection.createAnswer();
-        await peer.connection.setLocalDescription(answer);
-        this.socket.sendVoiceAnswer(fromId, answer);
-      }
-    );
-
-    // Receive answer
-    this.socket.rawSocket.on('voice:answer',
-      async ({ fromId, answer }: { fromId: string; answer: RTCSessionDescriptionInit }) => {
-        const peer = this.peers.get(fromId);
-        if (peer) {
-          await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+        try {
+          await peer.connection.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await peer.connection.createAnswer();
+          await peer.connection.setLocalDescription(answer);
+          this.socket.sendVoiceAnswer(fromId, answer);
+        } catch (e) {
+          console.warn('[voice] Failed to handle offer from', fromId, e);
         }
       }
     );
 
-    // Receive ICE candidate
+    this.socket.rawSocket.on('voice:answer',
+      async ({ fromId, answer }: { fromId: string; answer: RTCSessionDescriptionInit }) => {
+        const peer = this.peers.get(fromId);
+        if (peer) {
+          try {
+            await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+          } catch (e) {
+            console.warn('[voice] Failed to handle answer from', fromId, e);
+          }
+        }
+      }
+    );
+
     this.socket.rawSocket.on('voice:ice-candidate',
       async ({ fromId, candidate }: { fromId: string; candidate: RTCIceCandidateInit }) => {
         const peer = this.peers.get(fromId);
         if (peer && candidate) {
-          await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+          try {
+            await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.warn('[voice] Failed to add ICE candidate from', fromId, e);
+          }
         }
       }
     );
   }
 
-  async start(): Promise<boolean> {
+  /**
+   * Start microphone capture and connect to all pending/existing peers.
+   * @param existingPlayerIds - IDs of players already in the room
+   */
+  async start(existingPlayerIds: string[] = []): Promise<boolean> {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
         video: false,
       });
-      return true;
     } catch {
       return false;
     }
-  }
 
-  async connectToPeer(peerId: string) {
-    if (!this.localStream) return;
-
-    const peer = this.getOrCreatePeer(peerId);
-
-    // Add local tracks
-    for (const track of this.localStream.getTracks()) {
-      peer.connection.addTrack(track, this.localStream);
+    // Add existing players to pending list
+    const myId = this.socket.id;
+    for (const id of existingPlayerIds) {
+      if (id !== myId) {
+        this.pendingPeers.add(id);
+      }
     }
 
-    // Create and send offer
-    const offer = await peer.connection.createOffer();
-    await peer.connection.setLocalDescription(offer);
-    this.socket.sendVoiceOffer(peerId, offer);
+    // Connect to all pending peers now that we have localStream
+    for (const peerId of this.pendingPeers) {
+      await this.initiateConnection(peerId);
+    }
+    this.pendingPeers.clear();
+
+    return true;
+  }
+
+  /**
+   * Queue a peer for connection. If localStream is ready, connect immediately.
+   */
+  async connectToPeer(peerId: string) {
+    if (peerId === this.socket.id) return;
+
+    if (!this.localStream) {
+      // Queue for later when start() is called
+      this.pendingPeers.add(peerId);
+      return;
+    }
+
+    await this.initiateConnection(peerId);
+  }
+
+  private async initiateConnection(peerId: string) {
+    const peer = this.getOrCreatePeer(peerId);
+
+    // Add local tracks if not already added
+    const senders = peer.connection.getSenders();
+    if (this.localStream && senders.length === 0) {
+      for (const track of this.localStream.getTracks()) {
+        peer.connection.addTrack(track, this.localStream);
+      }
+    }
+
+    try {
+      const offer = await peer.connection.createOffer();
+      await peer.connection.setLocalDescription(offer);
+      this.socket.sendVoiceOffer(peerId, offer);
+    } catch (e) {
+      console.warn('[voice] Failed to create offer for', peerId, e);
+    }
   }
 
   private getOrCreatePeer(peerId: string): PeerInfo {
@@ -99,14 +148,12 @@ export class VoiceChatManager {
       audioLevel: 0,
     };
 
-    // ICE candidate relay
     connection.onicecandidate = (event) => {
       if (event.candidate) {
         this.socket.sendVoiceIceCandidate(peerId, event.candidate.toJSON());
       }
     };
 
-    // Receive remote stream
     connection.ontrack = (event) => {
       peer!.remoteStream = event.streams[0] || new MediaStream([event.track]);
       this.startAudioLevelMonitor(peer!);
@@ -160,12 +207,6 @@ export class VoiceChatManager {
   }
 
   get isMuted() { return this.muted; }
-
-  setPeerVolume(peerId: string, volume: number) {
-    const peer = this.peers.get(peerId);
-    if (!peer?.remoteStream) return;
-    // Volume is applied via the audio element in the UI
-  }
 
   getPeers(): PeerInfo[] {
     return Array.from(this.peers.values());

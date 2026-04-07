@@ -263,7 +263,11 @@ export function App() {
         <PlayerDirectionOverlay players={players} myPlayerId={myPlayerId} />
       )}
       {appMode === 'multiplayer' && (
-        <VoiceControls voiceManager={voiceManager} playerNames={playerNames} />
+        <VoiceControls
+          voiceManager={voiceManager}
+          playerNames={playerNames}
+          playerIds={players.map(p => p.id)}
+        />
       )}
     </div>
   );
