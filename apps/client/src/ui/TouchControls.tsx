@@ -60,7 +60,15 @@ export function TouchControls({ myDirection, onDirection, onGrab, phase, isHost 
             집기
           </button>
         ) : (
-          <div style={{ ...grabBtnStyle, background: 'rgba(155,142,196,0.2)', fontSize: 10, color: '#8b7bb5' }}>
+          <div style={{
+            ...grabBtnStyle,
+            background: 'rgba(155,142,196,0.2)',
+            fontSize: 11,
+            color: '#8b7bb5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
             방장만
           </div>
         )}
