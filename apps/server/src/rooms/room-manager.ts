@@ -1,9 +1,22 @@
 import type { Room } from '@qwas/shared';
-import { createInitialGameState } from '@qwas/shared';
+import { createInitialGameState, getDifficultyConfig } from '@qwas/shared';
 import { ROOM_CODE_LENGTH, MAX_PLAYERS, ROOM_TIMEOUT_MS } from '@qwas/shared';
 import type { AnyDirection, PlayerState } from '@qwas/shared';
 
-const DIRECTION_ORDER: AnyDirection[] = ['up', 'down', 'left', 'right'];
+const CARDINAL_DIRECTIONS: AnyDirection[] = ['up', 'down', 'left', 'right'];
+const DIAGONAL_DIRECTIONS: AnyDirection[] = ['up-left', 'up-right', 'down-right', 'down-left'];
+
+export function getDirectionsForLevel(level: number): AnyDirection[] {
+  const config = getDifficultyConfig(level);
+  if (config.diagonalPlayerCount >= 4) return DIAGONAL_DIRECTIONS;
+  if (config.diagonalPlayerCount >= 2) {
+    // First 2 stay cardinal, last 2 go diagonal
+    return ['up', 'down', 'up-right', 'down-left'];
+  }
+  return CARDINAL_DIRECTIONS;
+}
+
+const DIRECTION_ORDER = CARDINAL_DIRECTIONS;
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

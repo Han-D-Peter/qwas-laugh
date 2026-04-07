@@ -1,1 +1,1 @@
-export * from './generator.js';
+export { generateMaze, placeDoll, mulberry32, applyIrregularBorders } from './generator.js';

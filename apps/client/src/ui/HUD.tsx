@@ -57,7 +57,9 @@ export function HUD({
       }}>
         {phase === 'phase2'
           ? '좌/우 Arrow: 집게 이동 | Space: 집기'
-          : 'Arrow keys: 방향 변경 | Space: 집기 | R: 재시작'
+          : level >= 21
+            ? 'Arrow keys: 대각선 이동 | Space: 집기 | R: 재시작'
+            : 'Arrow keys: 방향 변경 | Space: 집기 | R: 재시작'
         }
       </div>
 

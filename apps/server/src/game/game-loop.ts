@@ -1,10 +1,11 @@
 import type { Server } from 'socket.io';
 import type { Room } from '@qwas/shared';
 import type { AnyDirection, Vec2 } from '@qwas/shared';
+import { getDirectionsForLevel } from '../rooms/room-manager.js';
 import {
   TICK_INTERVAL, CELL_SIZE, CLAW_BOX_SIZE, DOLL_BOX_SIZE,
   OVERLAP_THRESHOLD,
-  generateMaze, placeDoll, getDifficultyConfig,
+  generateMaze, placeDoll, getDifficultyConfig, applyIrregularBorders,
   calculateOverlap, checkMazeCollision,
   generatePhase2Path,
 } from '@qwas/shared';
@@ -58,6 +59,9 @@ export class GameLoopManager {
     const config = getDifficultyConfig(room.gameState.level);
     const seed = Date.now();
     const maze = generateMaze(config.mazeWidth, config.mazeHeight, seed);
+    if (config.irregularBorders) {
+      applyIrregularBorders(maze, config.irregularComplexity, seed);
+    }
 
     const centerX = Math.floor(maze.width / 2) * CELL_SIZE + CELL_SIZE / 2;
     const centerY = Math.floor(maze.height / 2) * CELL_SIZE + CELL_SIZE / 2;
@@ -77,10 +81,13 @@ export class GameLoopManager {
       type: room.gameState.level % 30,
     };
 
-    // Reset player input counts
-    for (const p of room.players) {
-      p.inputCount = 0;
+    // Reassign directions based on current level's difficulty
+    const directions = getDirectionsForLevel(room.gameState.level);
+    for (let i = 0; i < room.players.length; i++) {
+      room.players[i].assignedDirection = directions[i % directions.length];
+      room.players[i].inputCount = 0;
     }
+    room.gameState.players = [...room.players];
 
     const game: ActiveGame = {
       room,

@@ -1,6 +1,6 @@
 import { Application, Container } from 'pixi.js';
 import {
-  generateMaze, placeDoll, getDifficultyConfig,
+  generateMaze, placeDoll, getDifficultyConfig, applyIrregularBorders,
   CELL_SIZE, CLAW_BOX_SIZE, DOLL_BOX_SIZE, OVERLAP_THRESHOLD,
   calculateOverlap,
   checkMazeCollision,
@@ -107,6 +107,9 @@ export class GameEngine {
     this.phase = 'phase1';
 
     this.maze = generateMaze(this.config.mazeWidth, this.config.mazeHeight, this.seed);
+    if (this.config.irregularBorders) {
+      applyIrregularBorders(this.maze, this.config.irregularComplexity, this.seed);
+    }
     this.clawSpeed = this.config.clawSpeed;
 
     const centerX = Math.floor(this.maze.width / 2) * CELL_SIZE + CELL_SIZE / 2;
@@ -155,13 +158,15 @@ export class GameEngine {
     this.keyHandler = (e: KeyboardEvent) => {
       if (this.destroyed) return;
 
-      // Phase 1 controls
+      // Phase 1 controls — diagonal at higher levels
       if (this.phase === 'phase1') {
+        const diag = this.config.diagonalPlayerCount >= 4;
+        const d = 0.707; // 1/sqrt(2)
         switch (e.key) {
-          case 'ArrowUp':    this.clawDir = { x: 0, y: -1 }; e.preventDefault(); break;
-          case 'ArrowDown':  this.clawDir = { x: 0, y: 1 };  e.preventDefault(); break;
-          case 'ArrowLeft':  this.clawDir = { x: -1, y: 0 }; e.preventDefault(); break;
-          case 'ArrowRight': this.clawDir = { x: 1, y: 0 };  e.preventDefault(); break;
+          case 'ArrowUp':    this.clawDir = diag ? { x: -d, y: -d } : { x: 0, y: -1 }; e.preventDefault(); break;
+          case 'ArrowDown':  this.clawDir = diag ? { x: d, y: d }   : { x: 0, y: 1 };  e.preventDefault(); break;
+          case 'ArrowLeft':  this.clawDir = diag ? { x: -d, y: d }  : { x: -1, y: 0 }; e.preventDefault(); break;
+          case 'ArrowRight': this.clawDir = diag ? { x: d, y: -d }  : { x: 1, y: 0 };  e.preventDefault(); break;
           case ' ': this.attemptPhase1Grab(); e.preventDefault(); break;
         }
       }

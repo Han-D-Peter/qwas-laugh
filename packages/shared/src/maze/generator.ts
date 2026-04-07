@@ -77,6 +77,51 @@ export function generateMaze(width: number, height: number, seed: number): MazeD
   return { width, height, cells, seed, cellSize: CELL_SIZE };
 }
 
+/**
+ * Apply irregular borders to a maze by walling off random edge cells.
+ * This makes the boundary non-rectangular for higher difficulty.
+ */
+export function applyIrregularBorders(maze: MazeData, complexity: number, seed: number): MazeData {
+  if (complexity <= 0) return maze;
+  const rng = mulberry32(seed + 54321);
+  const { cells, width, height } = maze;
+
+  // How many edge cells to "block off" (seal all walls)
+  const edgeCells: { row: number; col: number }[] = [];
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      if (row === 0 || row === height - 1 || col === 0 || col === width - 1) {
+        // Don't block the center area
+        const distFromCenter = Math.abs(row - height / 2) + Math.abs(col - width / 2);
+        if (distFromCenter > Math.min(width, height) * 0.3) {
+          edgeCells.push({ row, col });
+        }
+      }
+    }
+  }
+
+  // Block a fraction of edge cells based on complexity
+  const blockCount = Math.floor(edgeCells.length * (complexity === 1 ? 0.3 : 0.5));
+  // Shuffle and pick
+  for (let i = edgeCells.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [edgeCells[i], edgeCells[j]] = [edgeCells[j], edgeCells[i]];
+  }
+
+  for (let i = 0; i < blockCount; i++) {
+    const { row, col } = edgeCells[i];
+    const cell = cells[row][col];
+    cell.walls = { north: true, south: true, east: true, west: true };
+    // Also wall off neighbors facing this cell
+    if (row > 0) cells[row - 1][col].walls.south = true;
+    if (row < height - 1) cells[row + 1][col].walls.north = true;
+    if (col > 0) cells[row][col - 1].walls.east = true;
+    if (col < width - 1) cells[row][col + 1].walls.west = true;
+  }
+
+  return maze;
+}
+
 function getUnvisitedNeighbors(
   row: number, col: number,
   visited: boolean[][], width: number, height: number
