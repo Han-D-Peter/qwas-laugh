@@ -72,7 +72,7 @@ export class GameLoopManager {
     room.gameState.maze = maze;
     room.gameState.claw = {
       position: { x: centerX, y: centerY },
-      direction: { x: 1, y: 0 },
+      direction: { x: 0, y: 0 },
       speed: config.clawSpeed,
       box: { x: centerX - CLAW_BOX_SIZE / 2, y: centerY - CLAW_BOX_SIZE / 2, width: CLAW_BOX_SIZE, height: CLAW_BOX_SIZE },
     };
@@ -94,7 +94,7 @@ export class GameLoopManager {
       room,
       intervalId: setInterval(() => this.tick(room.code), TICK_INTERVAL),
       clawPos: { x: centerX, y: centerY },
-      clawDir: { x: 1, y: 0 },
+      clawDir: { x: 0, y: 0 },
       clawSpeed: config.clawSpeed,
       startPos: { x: centerX, y: centerY },
       dollPos,
@@ -387,10 +387,10 @@ export class GameLoopManager {
 
   private resetPhase1(game: ActiveGame) {
     game.clawPos = { ...game.startPos };
-    game.clawDir = { x: 1, y: 0 };
+    game.clawDir = { x: 0, y: 0 };
     game.room.gameState.coins++;
     game.room.gameState.claw.position = { ...game.startPos };
-    game.room.gameState.claw.direction = { x: 1, y: 0 };
+    game.room.gameState.claw.direction = { x: 0, y: 0 };
   }
 
   private failAndResetToPhase1(game: ActiveGame) {

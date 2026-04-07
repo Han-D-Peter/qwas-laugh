@@ -138,8 +138,7 @@ export class GameEngine {
     this.clawPos = { x: centerX, y: centerY };
     this.startPos = { ...this.clawPos };
 
-    const dirs: Vec2[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
-    this.clawDir = dirs[Math.floor(Math.random() * dirs.length)];
+    this.clawDir = { x: 0, y: 0 };
 
     this.dollPos = placeDoll(this.maze, this.config.dollMinDistance, this.seed);
 
@@ -160,8 +159,7 @@ export class GameEngine {
 
   private resetPhase1() {
     this.clawPos = { ...this.startPos };
-    const dirs: Vec2[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
-    this.clawDir = dirs[Math.floor(Math.random() * dirs.length)];
+    this.clawDir = { x: 0, y: 0 };
     this.coins++;
     this.phase = 'phase1';
     this.probabilityA = 0;
