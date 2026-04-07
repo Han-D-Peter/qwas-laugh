@@ -11,6 +11,7 @@ interface VoiceControlsProps {
 export function VoiceControls({ voiceManager, playerNames, playerIds = [] }: VoiceControlsProps) {
   const [muted, setMuted] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [volumes, setVolumes] = useState<Map<string, number>>(new Map());
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
@@ -29,8 +30,22 @@ export function VoiceControls({ voiceManager, playerNames, playerIds = [] }: Voi
   const handleToggleVoice = async () => {
     if (!voiceManager) return;
     if (!enabled) {
+      // Check permission state first
+      try {
+        const perm = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (perm.state === 'denied') {
+          setDenied(true);
+          return;
+        }
+      } catch { /* permissions API not supported, try anyway */ }
+
       const ok = await voiceManager.start(playerIds);
-      if (ok) setEnabled(true);
+      if (ok) {
+        setEnabled(true);
+        setDenied(false);
+      } else {
+        setDenied(true);
+      }
     }
   };
 
@@ -72,9 +87,32 @@ export function VoiceControls({ voiceManager, playerNames, playerIds = [] }: Voi
       </div>
 
       {!enabled ? (
-        <button onClick={handleToggleVoice} style={voiceBtnStyle}>
-          음성채팅 켜기
-        </button>
+        <>
+          <button onClick={handleToggleVoice} style={voiceBtnStyle}>
+            음성채팅 켜기
+          </button>
+          {denied && (
+            <div style={{
+              marginTop: 8, padding: '8px 10px', borderRadius: 8,
+              background: '#fff3e0', fontSize: 11, color: '#e65100', lineHeight: 1.4,
+            }}>
+              마이크 권한이 거부되었습니다.
+              <br />
+              <strong>브라우저 주소창 왼쪽 🔒 아이콘</strong>을 클릭하여 마이크를 "허용"으로 변경한 뒤 페이지를 새로고침 해주세요.
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  display: 'block', marginTop: 6, width: '100%',
+                  padding: '5px', borderRadius: 6, border: '1px solid #e65100',
+                  background: '#fff', color: '#e65100', fontSize: 11,
+                  cursor: 'pointer', fontWeight: 600,
+                }}
+              >
+                새로고침
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <>
           <button
