@@ -6,9 +6,9 @@ function lerp(a: number, b: number, t: number): number {
 
 // Anchor points at tier boundaries (every 4 levels)
 const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
-  // Tier 1: Levels 1-4 (넓은 통로, 쉬운 미로)
+  // Tier 1: Levels 1-4
   {
-    mazeWidth: 7, mazeHeight: 7, mazeCellSize: 100, clawSpeed: 2,
+    mazeWidth: 7, mazeHeight: 7, mazeCellSize: 80, clawSpeed: 3,
     dollMinDistance: 3, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
@@ -18,7 +18,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 2: Levels 5-8
   {
-    mazeWidth: 10, mazeHeight: 10, mazeCellSize: 90, clawSpeed: 2.5,
+    mazeWidth: 10, mazeHeight: 10, mazeCellSize: 75, clawSpeed: 3.2,
     dollMinDistance: 5, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,

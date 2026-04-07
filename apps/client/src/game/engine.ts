@@ -10,6 +10,7 @@ import type { MazeData, Vec2, DifficultyConfig } from '@qwas/shared';
 import type { Phase2Path } from '@qwas/shared';
 import { Phase1Scene } from './phase1/Phase1Scene.js';
 import { Phase2Scene } from './phase2/Phase2Scene.js';
+import { ObstacleManager } from './phase1/ObstacleManager.js';
 import { runSuspenseAnimation } from './animations/suspense.js';
 
 export interface GameInfo {
@@ -37,6 +38,7 @@ export class GameEngine {
   private worldContainer!: Container;
   private phase1Scene!: Phase1Scene;
   private phase2Scene!: Phase2Scene;
+  private obstacleManager!: ObstacleManager;
   private onInfoUpdate: (info: GameInfo) => void;
 
   // Game state
@@ -109,6 +111,7 @@ export class GameEngine {
 
     this.phase1Scene = new Phase1Scene(this.worldContainer);
     this.phase2Scene = new Phase2Scene(this.worldContainer);
+    this.obstacleManager = new ObstacleManager(this.phase1Scene.getObstacleContainer());
 
     if (!this.remoteMode) {
       this.setupLevel(this.level);
@@ -147,6 +150,9 @@ export class GameEngine {
     this.phase1Scene.setClaw(this.clawPos);
     this.phase1Scene.show();
     this.phase2Scene.hide();
+
+    // Spawn ghost obstacles for mid+ levels
+    this.obstacleManager.spawn(level, this.maze, this.seed);
 
     this.probabilityA = 0;
     this.probabilityB = 0;
@@ -394,6 +400,10 @@ export class GameEngine {
     this.animFrame++;
     if (this.phase === 'phase1' || this.phase === 'phase1_to_phase2') {
       this.phase1Scene.updateAnimations(this.animFrame);
+      // Update ghost animation even in remote mode
+      if (this.remoteMode && this.maze) {
+        this.obstacleManager.update(this.animFrame, this.clawPos);
+      }
     }
     if (this.phase === 'phase2' || this.phase === 'phase2_countdown' || this.phase === 'suspense') {
       this.phase2Scene.updateAnimations(this.animFrame);
@@ -417,6 +427,13 @@ export class GameEngine {
       this.resetPhase1();
     } else {
       this.clawPos = newPos;
+    }
+
+    // Update ghost obstacles and check collision
+    const ghostHit = this.obstacleManager.update(this.animFrame, this.clawPos);
+    if (ghostHit) {
+      this.resetPhase1();
+      return;
     }
 
     this.phase1Scene.setClaw(this.clawPos);
@@ -558,6 +575,7 @@ export class GameEngine {
         this.phase1Scene.setDoll(state.doll.position, state.doll.type);
         this.phase1Scene.show();
         this.phase2Scene.hide();
+        this.obstacleManager.spawn(state.level, state.maze, state.maze.seed);
       }
       this.clawPos = { ...state.claw.position };
       this.phase1Scene.setClaw(this.clawPos);

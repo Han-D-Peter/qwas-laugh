@@ -30,6 +30,9 @@ interface ActiveGame {
   p2Countdown: number;
   probabilityA: number;
   probabilityB: number;
+  /** Player IDs assigned to Phase 2 left/right controls */
+  p2LeftPlayerId: string | null;
+  p2RightPlayerId: string | null;
   // Queued input per player (latest direction change)
   inputQueue: Map<string, AnyDirection>;
   // Phase 2 input queue
@@ -107,6 +110,8 @@ export class GameLoopManager {
       p2Countdown: 0,
       probabilityA: 0,
       probabilityB: 0,
+      p2LeftPlayerId: null,
+      p2RightPlayerId: null,
       inputQueue: new Map(),
       p2InputQueue: new Map(),
     };
@@ -158,6 +163,11 @@ export class GameLoopManager {
   handlePhase2Input(roomCode: string, playerId: string, dir: 'left' | 'right') {
     const game = this.games.get(roomCode);
     if (!game || game.room.gameState.phase !== 'phase2') return;
+
+    // Only assigned players can control Phase 2
+    if (dir === 'left' && playerId !== game.p2LeftPlayerId) return;
+    if (dir === 'right' && playerId !== game.p2RightPlayerId) return;
+
     game.p2InputQueue.set(playerId, dir);
   }
 
@@ -361,6 +371,8 @@ export class GameLoopManager {
     game.p2ClawY = 0;
     game.p2DescentSpeed = 1.2 + game.room.gameState.level * 0.05;
     game.p2DriftTime = 0;
+    game.p2LeftPlayerId = p2Players[0]?.id || null;
+    game.p2RightPlayerId = p2Players[1]?.id || null;
 
     game.room.gameState.phase = 'phase2';
     game.room.gameState.phase2 = {

@@ -1,32 +1,35 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import type { MazeData, Vec2 } from '@qwas/shared';
 import { CLAW_BOX_SIZE, DOLL_BOX_SIZE } from '@qwas/shared';
 import { drawClaw } from '../sprites/claw.js';
-import { drawDoll, DOLL_TYPES } from '../sprites/doll.js';
+import { drawDoll } from '../sprites/doll.js';
 
 export class Phase1Scene {
   private parent: Container;
   private container: Container;
+  private bgGraphics: Graphics;
   private mazeGraphics: Graphics;
   private clawContainer: Container;
   private dollContainer: Container;
-  private clawBoxGraphics: Graphics;
   private dollBoxGraphics: Graphics;
+  private obstacleContainer: Container;
 
   constructor(parent: Container) {
     this.parent = parent;
     this.container = new Container();
+    this.bgGraphics = new Graphics();
     this.mazeGraphics = new Graphics();
     this.clawContainer = new Container();
     this.dollContainer = new Container();
-    this.clawBoxGraphics = new Graphics();
     this.dollBoxGraphics = new Graphics();
+    this.obstacleContainer = new Container();
 
+    this.container.addChild(this.bgGraphics);
     this.container.addChild(this.mazeGraphics);
+    this.container.addChild(this.obstacleContainer);
     this.container.addChild(this.dollContainer);
     this.container.addChild(this.dollBoxGraphics);
     this.container.addChild(this.clawContainer);
-    this.container.addChild(this.clawBoxGraphics);
     parent.addChild(this.container);
   }
 
@@ -34,20 +37,60 @@ export class Phase1Scene {
   hide() { this.container.visible = false; }
 
   buildMaze(maze: MazeData) {
+    this.bgGraphics.clear();
     this.mazeGraphics.clear();
 
     const { cells, width, height, cellSize } = maze;
+    const totalW = width * cellSize;
+    const totalH = height * cellSize;
+    const pad = 30;
 
-    // Background fill for maze area
-    this.mazeGraphics.roundRect(
-      -10, -10,
-      width * cellSize + 20, height * cellSize + 20,
-      12
-    );
-    this.mazeGraphics.fill({ color: 0xfaf5ff, alpha: 0.6 });
+    // ─── Claw machine frame (outer border) ───
+    // Outer metallic frame
+    this.bgGraphics.roundRect(-pad - 8, -pad - 8, totalW + (pad + 8) * 2, totalH + (pad + 8) * 2, 20);
+    this.bgGraphics.fill({ color: 0x6b5b95, alpha: 0.3 });
 
-    // Draw maze walls with rounded style
-    this.mazeGraphics.setStrokeStyle({ width: 3, color: 0x9b8ec4, cap: 'round' });
+    // Inner frame border
+    this.bgGraphics.roundRect(-pad, -pad, totalW + pad * 2, totalH + pad * 2, 16);
+    this.bgGraphics.fill({ color: 0x9b8ec4, alpha: 0.15 });
+    this.bgGraphics.setStrokeStyle({ width: 4, color: 0x9b8ec4, alpha: 0.5 });
+    this.bgGraphics.stroke();
+
+    // Glass background (play area)
+    this.bgGraphics.roundRect(0, 0, totalW, totalH, 8);
+    this.bgGraphics.fill({ color: 0xfaf5ff, alpha: 0.7 });
+
+    // Corner bolts (decorative)
+    const boltPositions = [
+      [-pad + 10, -pad + 10], [totalW + pad - 10, -pad + 10],
+      [-pad + 10, totalH + pad - 10], [totalW + pad - 10, totalH + pad - 10],
+    ];
+    for (const [bx, by] of boltPositions) {
+      this.bgGraphics.circle(bx, by, 5);
+      this.bgGraphics.fill({ color: 0x7d6fa8, alpha: 0.6 });
+      this.bgGraphics.circle(bx, by, 2);
+      this.bgGraphics.fill({ color: 0xc4b8e0, alpha: 0.8 });
+    }
+
+    // Top label area
+    this.bgGraphics.roundRect(totalW * 0.2, -pad - 4, totalW * 0.6, 16, 4);
+    this.bgGraphics.fill({ color: 0xf5c27e, alpha: 0.6 });
+
+    // Subtle grid pattern on the floor
+    this.bgGraphics.setStrokeStyle({ width: 0.5, color: 0xd4c8f0, alpha: 0.3 });
+    for (let i = 0; i <= width; i++) {
+      this.bgGraphics.moveTo(i * cellSize, 0);
+      this.bgGraphics.lineTo(i * cellSize, totalH);
+      this.bgGraphics.stroke();
+    }
+    for (let i = 0; i <= height; i++) {
+      this.bgGraphics.moveTo(0, i * cellSize);
+      this.bgGraphics.lineTo(totalW, i * cellSize);
+      this.bgGraphics.stroke();
+    }
+
+    // ─── Maze walls ───
+    this.mazeGraphics.setStrokeStyle({ width: 4, color: 0x7d6fa8, cap: 'round' });
 
     for (let row = 0; row < height; row++) {
       for (let col = 0; col < width; col++) {
@@ -82,7 +125,6 @@ export class Phase1Scene {
   setClaw(pos: Vec2) {
     this.clawContainer.x = pos.x;
     this.clawContainer.y = pos.y;
-    // No bounding box drawn — keep visuals clean
   }
 
   setDoll(pos: Vec2, type: number) {
@@ -93,7 +135,7 @@ export class Phase1Scene {
     const dollGraphics = drawDoll(type);
     this.dollContainer.addChild(dollGraphics);
 
-    // Update doll box indicator
+    // Doll box indicator
     this.dollBoxGraphics.clear();
     this.dollBoxGraphics.rect(
       pos.x - DOLL_BOX_SIZE / 2,
@@ -106,8 +148,17 @@ export class Phase1Scene {
     this.dollBoxGraphics.stroke();
   }
 
+  // ─── Obstacles (scary dolls) ───
+
+  getObstacleContainer(): Container {
+    return this.obstacleContainer;
+  }
+
+  clearObstacles() {
+    this.obstacleContainer.removeChildren();
+  }
+
   updateAnimations(frame: number) {
-    // Claw gentle bob animation
     if (this.clawContainer.children.length === 0) {
       const clawGfx = drawClaw();
       this.clawContainer.addChild(clawGfx);
