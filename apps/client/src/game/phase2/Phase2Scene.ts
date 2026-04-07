@@ -89,13 +89,13 @@ export class Phase2Scene {
     const dollGfx = drawDoll(dollType);
     this.dollContainer.addChild(dollGfx);
     this.dollContainer.x = path.dollBoxX;
-    this.dollContainer.y = path.totalLength - 20;
+    this.dollContainer.y = path.totalLength - 180;
 
     // Doll box indicator
     this.dollBoxGraphics.clear();
     this.dollBoxGraphics.rect(
       path.dollBoxX - DOLL_BOX_SIZE / 2,
-      path.totalLength - 20 - DOLL_BOX_SIZE / 2,
+      path.totalLength - 180 - DOLL_BOX_SIZE / 2,
       DOLL_BOX_SIZE,
       DOLL_BOX_SIZE,
     );

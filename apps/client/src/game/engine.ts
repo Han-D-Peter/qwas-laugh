@@ -287,7 +287,7 @@ export class GameEngine {
     };
     const dollBox = {
       x: this.p2Path.dollBoxX - DOLL_BOX_SIZE / 2,
-      y: this.p2Path.totalLength - 20 - DOLL_BOX_SIZE / 2,
+      y: this.p2Path.totalLength - 180 - DOLL_BOX_SIZE / 2,
       width: DOLL_BOX_SIZE, height: DOLL_BOX_SIZE,
     };
 

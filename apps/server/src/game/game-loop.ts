@@ -304,7 +304,7 @@ export class GameLoopManager {
     };
     const dollBox = {
       x: game.p2Path.dollBoxX - DOLL_BOX_SIZE / 2,
-      y: game.p2Path.totalLength - 20 - DOLL_BOX_SIZE / 2,
+      y: game.p2Path.totalLength - 180 - DOLL_BOX_SIZE / 2,
       width: DOLL_BOX_SIZE, height: DOLL_BOX_SIZE,
     };
 
@@ -372,7 +372,7 @@ export class GameLoopManager {
       driftOffset: 0,
       dollBox: {
         x: game.p2Path.dollBoxX - DOLL_BOX_SIZE / 2,
-        y: game.p2Path.totalLength - 20 - DOLL_BOX_SIZE / 2,
+        y: game.p2Path.totalLength - 180 - DOLL_BOX_SIZE / 2,
         width: DOLL_BOX_SIZE,
         height: DOLL_BOX_SIZE,
       },

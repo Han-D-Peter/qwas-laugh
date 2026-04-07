@@ -78,7 +78,7 @@ export function generatePhase2Path(
   }
 
   // Add extra straight runway at the bottom for aiming at the doll
-  const extraRunway = 120;
+  const extraRunway = 350;
   const lastCenter = centerLine[centerLine.length - 1];
   const runwaySteps = 6;
   for (let i = 1; i <= runwaySteps; i++) {
