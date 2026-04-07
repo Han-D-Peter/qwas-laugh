@@ -476,6 +476,62 @@ export class GameEngine {
     });
   }
 
+  /**
+   * Apply authoritative server state for multiplayer rendering.
+   * Replaces local simulation with server data.
+   */
+  applyServerState(state: import('@qwas/shared').GameState) {
+    this.level = state.level;
+    this.coins = state.coins;
+    this.lastResult = state.lastResult;
+
+    // Phase 1 rendering from server state
+    if (state.phase === 'phase1' && state.maze) {
+      if (this.phase !== 'phase1' || !this.maze || this.maze.seed !== state.maze.seed) {
+        this.maze = state.maze;
+        this.config = getDifficultyConfig(state.level);
+        this.phase1Scene.buildMaze(state.maze);
+        this.phase1Scene.setDoll(state.doll.position, state.doll.type);
+        this.phase1Scene.show();
+        this.phase2Scene.hide();
+      }
+      this.clawPos = { ...state.claw.position };
+      this.phase1Scene.setClaw(this.clawPos);
+      this.updatePhase1Camera();
+      this.phase = 'phase1';
+    }
+
+    // Phase 2 rendering from server state
+    if (state.phase === 'phase2' && state.phase2) {
+      if (this.phase !== 'phase2') {
+        this.config = getDifficultyConfig(state.level);
+        const p2 = state.phase2;
+        this.p2Path = {
+          centerLine: p2.pathPoints,
+          leftWall: p2.wallLeft,
+          rightWall: p2.wallRight,
+          totalLength: p2.wallLeft[p2.wallLeft.length - 1]?.y || 500,
+          pathWidth: p2.pathWidth,
+          dollBoxX: p2.dollBox.x + p2.dollBox.width / 2,
+        };
+        this.phase1Scene.hide();
+        this.phase2Scene.show();
+        this.phase2Scene.buildPath(this.p2Path, state.doll.type);
+      }
+      this.p2ClawX = state.phase2.clawX;
+      this.p2ClawY = state.phase2.clawY;
+      this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
+      this.updatePhase2Camera();
+      this.phase = 'phase2';
+    }
+
+    if (state.phase === 'result') {
+      this.phase = 'result' as any;
+    }
+
+    this.updateInfo();
+  }
+
   restart() {
     this.level = 1;
     this.coins = 0;
