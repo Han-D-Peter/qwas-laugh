@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: qwas-laugh-server
+    runtime: node
+    plan: free  # 'starter' ($7/mo) for always-on
+    buildCommand: "npm i -g pnpm && pnpm install && pnpm --filter @qwas/shared build && pnpm --filter @qwas/server build"
+    startCommand: "node apps/server/dist/index.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: CLIENT_ORIGIN
+        sync: false  # Set to your Cloudflare Pages URL
+      - key: TURN_USER
+        sync: false
+      - key: TURN_PASSWORD
+        sync: false
+      - key: TURN_SERVER_URL
+        sync: false

@@ -7,7 +7,8 @@ const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
 
 async function fetchIceServers(): Promise<RTCIceServer[]> {
   try {
-    const res = await fetch('/api/turn-credentials');
+    const serverUrl = (import.meta as any).env?.VITE_SERVER_URL || '';
+    const res = await fetch(`${serverUrl}/api/turn-credentials`);
     if (res.ok) {
       const data = await res.json();
       return data.iceServers;
