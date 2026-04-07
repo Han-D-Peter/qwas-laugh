@@ -16,12 +16,9 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
 
   useEffect(() => {
     if (!voiceManager) return;
-
-    // Refresh peer list periodically for audio level updates
     refreshInterval.current = setInterval(() => {
       setPeers([...voiceManager.getPeers()]);
-    }, 200);
-
+    }, 150);
     return () => {
       if (refreshInterval.current) clearInterval(refreshInterval.current);
     };
@@ -47,7 +44,6 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
     if (audio) audio.volume = vol;
   };
 
-  // Attach remote streams to audio elements
   useEffect(() => {
     for (const peer of peers) {
       if (peer.remoteStream) {
@@ -69,7 +65,10 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
 
   return (
     <div style={containerStyle}>
-      {/* Toggle button */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#4a3f6b', marginBottom: 6 }}>
+        음성채팅
+      </div>
+
       {!enabled ? (
         <button onClick={handleToggleVoice} style={voiceBtnStyle}>
           음성채팅 켜기
@@ -80,26 +79,43 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
             onClick={handleToggleMute}
             style={{
               ...voiceBtnStyle,
-              background: muted ? '#e88' : '#8bc8a4',
+              background: muted ? '#e07070' : '#6bc48a',
             }}
           >
             {muted ? '음소거 해제' : '음소거'}
           </button>
 
-          {/* Peer list with volume controls */}
-          {peers.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              {peers.map(peer => (
+          {/* Participant list */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 11, color: '#8b7bb5', marginBottom: 4 }}>
+              참가자 ({peers.length}명)
+            </div>
+            {peers.length === 0 && (
+              <div style={{ fontSize: 11, color: '#bbb', padding: '4px 0' }}>
+                아직 연결된 참가자 없음
+              </div>
+            )}
+            {peers.map(peer => {
+              const isSpeaking = peer.audioLevel > 0.05;
+              const name = playerNames.get(peer.id) || peer.id.slice(0, 6);
+              return (
                 <div key={peer.id} style={peerRowStyle}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {/* Talking indicator */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                    {/* Speaking indicator - animated ring */}
                     <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: peer.audioLevel > 0.05 ? '#6ce88c' : '#ccc',
-                      transition: 'background 0.15s',
+                      width: 12, height: 12, borderRadius: '50%',
+                      background: isSpeaking ? '#6ce88c' : '#ddd',
+                      border: isSpeaking ? '2px solid #4cca6c' : '2px solid #ccc',
+                      transition: 'all 0.15s',
+                      boxShadow: isSpeaking ? '0 0 6px rgba(108, 232, 140, 0.6)' : 'none',
                     }} />
-                    <span style={{ fontSize: 12, color: '#4a3f6b' }}>
-                      {playerNames.get(peer.id) || peer.id.slice(0, 6)}
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: isSpeaking ? 700 : 500,
+                      color: isSpeaking ? '#3a8c50' : '#4a3f6b',
+                      transition: 'all 0.15s',
+                    }}>
+                      {name}
                     </span>
                   </div>
                   <input
@@ -107,12 +123,12 @@ export function VoiceControls({ voiceManager, playerNames }: VoiceControlsProps)
                     min={0} max={1} step={0.05}
                     value={volumes.get(peer.id) ?? 1}
                     onChange={e => handleVolumeChange(peer.id, parseFloat(e.target.value))}
-                    style={{ width: 60, height: 4 }}
+                    style={{ width: 50, height: 4, accentColor: '#9b8ec4' }}
                   />
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </>
       )}
     </div>
@@ -123,11 +139,12 @@ const containerStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: 50,
   right: 16,
-  background: 'rgba(255,255,255,0.9)',
-  borderRadius: 14,
-  padding: '10px 14px',
-  boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-  minWidth: 140,
+  background: 'rgba(255,255,255,0.92)',
+  borderRadius: 16,
+  padding: '12px 14px',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+  backdropFilter: 'blur(8px)',
+  minWidth: 160,
 };
 
 const voiceBtnStyle: React.CSSProperties = {
@@ -146,5 +163,5 @@ const peerRowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '4px 0',
+  padding: '5px 0',
 };

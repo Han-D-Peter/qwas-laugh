@@ -178,9 +178,14 @@ export class GameLoopManager {
   }
 
   private tickPhase1(game: ActiveGame) {
-    // Apply latest queued input (direction change)
+    // Apply the most recent queued input (only one direction change per tick)
+    // Pick the latest input that arrived (last entry in the map)
+    let latestDirection: AnyDirection | null = null;
     for (const [, direction] of game.inputQueue) {
-      const vec = DIRECTION_VECTORS[direction];
+      latestDirection = direction;
+    }
+    if (latestDirection) {
+      const vec = DIRECTION_VECTORS[latestDirection];
       if (vec) {
         game.clawDir = { ...vec };
       }

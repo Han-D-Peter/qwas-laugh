@@ -5,6 +5,7 @@ import { VoiceChatManager } from './voice/webrtc.js';
 import { HUD } from './ui/HUD.js';
 import { Lobby } from './ui/Lobby.js';
 import { VoiceControls } from './ui/VoiceControls.js';
+import { PlayerDirectionOverlay } from './ui/PlayerDirectionOverlay.js';
 import type { GameState, PlayerState } from '@qwas/shared';
 
 type AppMode = 'lobby' | 'local' | 'multiplayer';
@@ -83,6 +84,7 @@ export function App() {
           break;
         case 'room:joined':
           setMyPlayerId(data.playerId);
+          if (data.code) setRoomCode(data.code);
           setLobbyMode('waiting');
           if (!voiceRef.current) {
             const vm = new VoiceChatManager(gs, () => setVoiceManager(vm));
@@ -258,20 +260,7 @@ export function App() {
         onRestart={handleRestart}
       />
       {appMode === 'multiplayer' && myPlayerId && (
-        <div style={{
-          position: 'absolute', top: 60, left: 16,
-          background: 'rgba(255,255,255,0.85)',
-          borderRadius: 12, padding: '8px 14px',
-          fontSize: 12, color: '#4a3f6b',
-        }}>
-          {players.map(p => (
-            <div key={p.id} style={{ marginBottom: 2 }}>
-              {p.name}: {p.assignedDirection}
-              {p.id === myPlayerId ? ' (나)' : ''}
-              {p.isHost ? ' (방장)' : ''}
-            </div>
-          ))}
-        </div>
+        <PlayerDirectionOverlay players={players} myPlayerId={myPlayerId} />
       )}
       {appMode === 'multiplayer' && (
         <VoiceControls voiceManager={voiceManager} playerNames={playerNames} />

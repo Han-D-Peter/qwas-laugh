@@ -45,10 +45,10 @@ export class GameSocket {
       this.onRoomEvent?.('room:created', { code, playerId });
     });
 
-    this.socket.on('room:joined', ({ playerId, state }: { playerId: string; state: GameState }) => {
-      this.roomInfo = { code: '', playerId };
+    this.socket.on('room:joined', ({ playerId, code, state }: { playerId: string; code: string; state: GameState }) => {
+      this.roomInfo = { code, playerId };
       this.onStateUpdate?.(state);
-      this.onRoomEvent?.('room:joined', { playerId });
+      this.onRoomEvent?.('room:joined', { playerId, code });
     });
 
     this.socket.on('room:player-joined', (data: any) => {

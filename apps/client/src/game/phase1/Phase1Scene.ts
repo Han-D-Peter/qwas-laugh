@@ -82,18 +82,7 @@ export class Phase1Scene {
   setClaw(pos: Vec2) {
     this.clawContainer.x = pos.x;
     this.clawContainer.y = pos.y;
-
-    // Update claw box indicator
-    this.clawBoxGraphics.clear();
-    this.clawBoxGraphics.rect(
-      pos.x - CLAW_BOX_SIZE / 2,
-      pos.y - CLAW_BOX_SIZE / 2,
-      CLAW_BOX_SIZE,
-      CLAW_BOX_SIZE
-    );
-    this.clawBoxGraphics.fill({ color: 0x7ecbf5, alpha: 0.3 });
-    this.clawBoxGraphics.setStrokeStyle({ width: 2, color: 0x5ba3d9 });
-    this.clawBoxGraphics.stroke();
+    // No bounding box drawn — keep visuals clean
   }
 
   setDoll(pos: Vec2, type: number) {

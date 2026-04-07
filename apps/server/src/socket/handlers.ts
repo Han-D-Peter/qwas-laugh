@@ -30,7 +30,7 @@ export function setupSocketHandlers(io: Server) {
       }
       const { room, playerId } = result;
       socket.join(room.code);
-      socket.emit('room:joined', { playerId, state: room.gameState });
+      socket.emit('room:joined', { playerId, code: room.code, state: room.gameState });
       socket.to(room.code).emit('room:player-joined', { playerName, playerId });
       io.to(room.code).emit('game:state', room.gameState);
     });

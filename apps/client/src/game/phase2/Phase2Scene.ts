@@ -108,18 +108,6 @@ export class Phase2Scene {
     this.clawContainer.x = x;
     this.clawContainer.y = y;
 
-    // Claw box
-    this.clawBoxGraphics.clear();
-    this.clawBoxGraphics.rect(
-      x - CLAW_BOX_SIZE / 2,
-      y - CLAW_BOX_SIZE / 2,
-      CLAW_BOX_SIZE,
-      CLAW_BOX_SIZE,
-    );
-    this.clawBoxGraphics.fill({ color: 0x7ecbf5, alpha: 0.3 });
-    this.clawBoxGraphics.setStrokeStyle({ width: 2, color: 0x5ba3d9 });
-    this.clawBoxGraphics.stroke();
-
     // Ensure claw sprite is present
     if (this.clawContainer.children.length === 0) {
       const clawGfx = drawClaw();
