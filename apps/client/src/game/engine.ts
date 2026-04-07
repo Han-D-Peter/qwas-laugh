@@ -82,12 +82,14 @@ export class GameEngine {
    * Used in multiplayer mode.
    */
   private remoteMode = false;
+  private initDone = false;
+  private initPromise: Promise<void>;
 
   constructor(container: HTMLElement, onInfoUpdate: (info: GameInfo) => void) {
     this.container = container;
     this.onInfoUpdate = onInfoUpdate;
     this.app = new Application();
-    this.init();
+    this.initPromise = this.init();
   }
 
   private async init() {
@@ -113,6 +115,7 @@ export class GameEngine {
       this.setupInput();
     }
     this.running = true;
+    this.initDone = true;
     this.gameLoop();
   }
 
@@ -538,7 +541,12 @@ export class GameEngine {
    * Apply authoritative server state for multiplayer rendering.
    * Replaces local simulation with server data.
    */
-  applyServerState(state: import('@qwas/shared').GameState) {
+  async applyServerState(state: import('@qwas/shared').GameState) {
+    // Wait for PixiJS init to complete before rendering
+    if (!this.initDone) {
+      await this.initPromise;
+    }
+
     this.level = state.level;
     this.coins = state.coins;
     this.lastResult = state.lastResult;
