@@ -39,6 +39,8 @@ export function App() {
     lastResult: null as string | null,
     suspenseProgress: 0,
     suspensePhase: '' as string,
+    probabilityA: 0,
+    probabilityB: 0,
   });
 
   // ─── Local Game ─────────────────────────────────────────────
@@ -134,6 +136,8 @@ export function App() {
           lastResult: state.lastResult,
           suspenseProgress: 0,
           suspensePhase: '',
+          probabilityA: Math.round(state.probabilityA * 100),
+          probabilityB: Math.round(state.probabilityB * 100),
         });
       }
     });
@@ -297,6 +301,8 @@ export function App() {
         lastResult={gameInfo.lastResult}
         suspenseProgress={gameInfo.suspenseProgress}
         suspensePhase={gameInfo.suspensePhase}
+        probabilityA={gameInfo.probabilityA}
+        probabilityB={gameInfo.probabilityB}
         onRestart={handleRestart}
       />
       {appMode === 'multiplayer' && myPlayerId && (

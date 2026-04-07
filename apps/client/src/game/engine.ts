@@ -20,6 +20,8 @@ export interface GameInfo {
   lastResult: string | null;
   suspenseProgress: number;
   suspensePhase: string;
+  probabilityA: number;
+  probabilityB: number;
 }
 
 type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' | 'suspense' | 'result';
@@ -487,6 +489,8 @@ export class GameEngine {
       lastResult: this.lastResult,
       suspenseProgress: this.suspenseProgress,
       suspensePhase: this.suspensePhase,
+      probabilityA: Math.round(this.probabilityA * 100),
+      probabilityB: Math.round(this.probabilityB * 100),
     });
   }
 

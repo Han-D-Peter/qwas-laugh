@@ -8,6 +8,8 @@ interface HUDProps {
   lastResult: string | null;
   suspenseProgress?: number;
   suspensePhase?: string;
+  probabilityA?: number;
+  probabilityB?: number;
   onRestart: () => void;
 }
 
@@ -18,22 +20,28 @@ const PHASE_LABELS: Record<string, string> = {
   phase2: 'Phase 2 - 하강',
   suspense: '결과 확인 중...',
   result: '결과',
+  paused: '일시정지',
 };
 
 export function HUD({
   level, coins, phase, overlapPercent, lastResult,
   suspenseProgress = 0, suspensePhase = '',
+  probabilityA = 0, probabilityB = 0,
   onRestart,
 }: HUDProps) {
   const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
-    if (lastResult) {
+    if (lastResult && (phase === 'result' || phase === 'phase1')) {
       setShowResult(true);
       const t = setTimeout(() => setShowResult(false), 2500);
       return () => clearTimeout(t);
     }
-  }, [lastResult]);
+  }, [lastResult, phase]);
+
+  const finalProb = probabilityA > 0 && probabilityB > 0
+    ? Math.round((probabilityA / 100) * (probabilityB / 100) * 100)
+    : 0;
 
   return (
     <>
@@ -52,9 +60,7 @@ export function HUD({
       {'ontouchstart' in globalThis ? null : (
         <div style={{
           position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-          ...pillStyle,
-          fontSize: 11,
-          opacity: 0.6,
+          ...pillStyle, fontSize: 11, opacity: 0.6,
         }}>
           {phase === 'phase2'
             ? '좌/우 Arrow: 집게 이동 | Space: 집기'
@@ -65,8 +71,8 @@ export function HUD({
         </div>
       )}
 
-      {/* Overlap indicator */}
-      {overlapPercent > 0 && phase !== 'suspense' && (
+      {/* Overlap indicator (shows after grab attempts) */}
+      {overlapPercent > 0 && phase !== 'suspense' && phase !== 'result' && (
         <div style={{
           position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)',
           ...pillStyle,
@@ -77,14 +83,20 @@ export function HUD({
         </div>
       )}
 
-      {/* Phase transition indicator */}
+      {/* Phase 1 → Phase 2 transition: show probability A */}
       {phase === 'phase1_to_phase2' && (
         <div style={centerOverlay}>
-          <div style={{ fontSize: 28, fontWeight: 'bold', color: '#6b5b95' }}>
-            Phase 2로 전환!
+          <div style={{ fontSize: 22, fontWeight: 'bold', color: '#6b5b95' }}>
+            Phase 1 완료!
           </div>
-          <div style={{ fontSize: 16, color: '#8b7bb5', marginTop: 8 }}>
-            확률 A: {overlapPercent.toFixed(1)}%
+          <div style={probBoxStyle}>
+            <span style={{ color: '#8b7bb5', fontSize: 14 }}>확률 A (겹침도)</span>
+            <span style={{ fontSize: 36, fontWeight: 'bold', color: '#4a3f6b' }}>
+              {probabilityA}%
+            </span>
+          </div>
+          <div style={{ fontSize: 13, color: '#9b8ec4', marginTop: 8 }}>
+            Phase 2로 이동합니다...
           </div>
         </div>
       )}
@@ -93,64 +105,167 @@ export function HUD({
       {phase === 'phase2_countdown' && (
         <div style={centerOverlay}>
           <div style={{ fontSize: 18, color: '#8b7bb5' }}>좌/우 키를 준비하세요!</div>
-          <div style={{ fontSize: 64, fontWeight: 'bold', color: '#6b5b95', marginTop: 8 }}>
-            {/* countdown value calculated from engine */}
-          </div>
         </div>
       )}
 
-      {/* Suspense bar */}
+      {/* ─── Suspense Sequence ─── */}
       {phase === 'suspense' && (
-        <div style={{
-          ...centerOverlay,
-          width: 300,
-        }}>
-          <div style={{ fontSize: 20, fontWeight: 'bold', color: '#6b5b95', marginBottom: 12 }}>
-            {suspensePhase === 'building' ? '인형을 잡는 중...' : '결과는...?'}
-          </div>
-          <div style={{
-            width: '100%', height: 12, borderRadius: 6,
-            background: 'rgba(155, 142, 196, 0.3)',
-            overflow: 'hidden',
-          }}>
+        <div style={{ ...centerOverlay, minWidth: 320, maxWidth: '90vw' }}>
+
+          {/* Phase: Show A */}
+          {suspensePhase === 'showA' && (
+            <>
+              <div style={{ fontSize: 16, color: '#8b7bb5', marginBottom: 8 }}>Phase 1 결과</div>
+              <div style={probBoxStyle}>
+                <span style={{ color: '#8b7bb5', fontSize: 13 }}>확률 A</span>
+                <span style={{
+                  fontSize: 42, fontWeight: 'bold', color: '#4a3f6b',
+                  animation: 'pop-in 0.4s ease-out',
+                }}>
+                  {probabilityA}%
+                </span>
+              </div>
+            </>
+          )}
+
+          {/* Phase: Show B */}
+          {suspensePhase === 'showB' && (
+            <>
+              <div style={{ fontSize: 16, color: '#8b7bb5', marginBottom: 8 }}>Phase 2 결과</div>
+              <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
+                <div style={probBoxStyle}>
+                  <span style={{ color: '#8b7bb5', fontSize: 12 }}>확률 A</span>
+                  <span style={{ fontSize: 28, fontWeight: 'bold', color: '#4a3f6b' }}>{probabilityA}%</span>
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#9b8ec4', alignSelf: 'center' }}>x</div>
+                <div style={probBoxStyle}>
+                  <span style={{ color: '#8b7bb5', fontSize: 12 }}>확률 B</span>
+                  <span style={{
+                    fontSize: 28, fontWeight: 'bold', color: '#4a3f6b',
+                    animation: 'pop-in 0.4s ease-out',
+                  }}>{probabilityB}%</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Phase: Calculating */}
+          {suspensePhase === 'calculating' && (
+            <>
+              <div style={{ fontSize: 16, color: '#8b7bb5', marginBottom: 12 }}>최종 확률 계산 중...</div>
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 12 }}>
+                <div style={probBoxSmall}>
+                  <span style={{ fontSize: 11, color: '#8b7bb5' }}>A</span>
+                  <span style={{ fontSize: 20, fontWeight: 'bold', color: '#4a3f6b' }}>{probabilityA}%</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 'bold', color: '#9b8ec4', alignSelf: 'center' }}>x</div>
+                <div style={probBoxSmall}>
+                  <span style={{ fontSize: 11, color: '#8b7bb5' }}>B</span>
+                  <span style={{ fontSize: 20, fontWeight: 'bold', color: '#4a3f6b' }}>{probabilityB}%</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 'bold', color: '#9b8ec4', alignSelf: 'center' }}>=</div>
+                <div style={{ ...probBoxSmall, background: 'rgba(126, 203, 245, 0.15)' }}>
+                  <span style={{ fontSize: 11, color: '#5ba3d9' }}>최종</span>
+                  <span style={{
+                    fontSize: 22, fontWeight: 'bold', color: '#3a7bc8',
+                    animation: 'pop-in 0.5s ease-out',
+                  }}>{finalProb}%</span>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div style={{
+                width: '100%', height: 8, borderRadius: 4,
+                background: 'rgba(155, 142, 196, 0.2)', overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${suspenseProgress * 100}%`, height: '100%', borderRadius: 4,
+                  background: 'linear-gradient(90deg, #9b8ec4, #7ecbf5)',
+                  transition: 'width 0.1s',
+                }} />
+              </div>
+            </>
+          )}
+
+          {/* Phase: Drumroll */}
+          {suspensePhase === 'drumroll' && (
+            <>
+              <div style={{
+                fontSize: 20, fontWeight: 'bold', color: '#6b5b95',
+                marginBottom: 16,
+              }}>
+                인형을 뽑을 수 있을까...?
+              </div>
+              <div style={{
+                fontSize: 48, fontWeight: 'bold', color: '#4a3f6b',
+                animation: 'pulse 0.6s ease-in-out infinite',
+              }}>
+                {finalProb}%
+              </div>
+              <div style={{
+                marginTop: 12,
+                width: 40, height: 40,
+                border: '4px solid rgba(155, 142, 196, 0.3)',
+                borderTopColor: '#9b8ec4',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+                margin: '12px auto 0',
+              }} />
+            </>
+          )}
+
+          {/* Phase: Reveal */}
+          {suspensePhase === 'reveal' && (
             <div style={{
-              width: `${suspenseProgress * 100}%`,
-              height: '100%',
-              borderRadius: 6,
-              background: suspensePhase === 'building'
-                ? 'linear-gradient(90deg, #9b8ec4, #7ecbf5)'
-                : 'linear-gradient(90deg, #f5c27e, #f57e7e)',
-              transition: 'width 0.1s',
-            }} />
-          </div>
+              fontSize: 18, fontWeight: 'bold',
+              color: '#6b5b95',
+              animation: 'pop-in 0.3s ease-out',
+            }}>
+              결과 확인 중...
+            </div>
+          )}
         </div>
       )}
 
       {/* Result popup */}
-      {showResult && lastResult && phase === 'result' && (
+      {showResult && lastResult && (
         <div style={{
           position: 'absolute',
           top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          padding: '24px 48px',
-          borderRadius: 20,
-          background: lastResult === 'success' ? 'rgba(100, 220, 140, 0.95)' : 'rgba(220, 100, 100, 0.95)',
+          padding: '28px 48px',
+          borderRadius: 24,
+          background: lastResult === 'success'
+            ? 'linear-gradient(135deg, rgba(100, 220, 140, 0.97), rgba(60, 180, 120, 0.97))'
+            : 'linear-gradient(135deg, rgba(220, 100, 100, 0.97), rgba(180, 60, 60, 0.97))',
           color: '#fff',
-          fontSize: 32,
+          fontSize: 36,
           fontWeight: 'bold',
           textAlign: 'center',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          animation: 'pop-in 0.3s ease-out',
-          zIndex: 10,
+          boxShadow: '0 12px 48px rgba(0,0,0,0.35)',
+          animation: 'pop-in 0.4s ease-out',
+          zIndex: 20,
         }}>
           {lastResult === 'success' ? '성공!' : '실패...'}
+          <div style={{ fontSize: 14, fontWeight: 500, marginTop: 6, opacity: 0.9 }}>
+            {lastResult === 'success'
+              ? `확률 ${finalProb}%로 인형을 뽑았습니다!`
+              : `확률 ${finalProb}%... 아쉽게 놓쳤습니다`
+            }
+          </div>
         </div>
       )}
 
       <style>{`
         @keyframes pop-in {
-          from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-          to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          from { transform: scale(0.5); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </>
@@ -173,10 +288,30 @@ const centerOverlay: React.CSSProperties = {
   position: 'absolute',
   top: '50%', left: '50%',
   transform: 'translate(-50%, -50%)',
-  padding: '24px 36px',
-  borderRadius: 20,
-  background: 'rgba(255, 255, 255, 0.92)',
+  padding: '28px 36px',
+  borderRadius: 24,
+  background: 'rgba(255, 255, 255, 0.95)',
   textAlign: 'center',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+  boxShadow: '0 12px 48px rgba(0,0,0,0.18)',
+  backdropFilter: 'blur(12px)',
   zIndex: 10,
+};
+
+const probBoxStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: '12px 20px',
+  borderRadius: 14,
+  background: 'rgba(155, 142, 196, 0.1)',
+  marginTop: 8,
+};
+
+const probBoxSmall: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: '8px 14px',
+  borderRadius: 10,
+  background: 'rgba(155, 142, 196, 0.08)',
 };
