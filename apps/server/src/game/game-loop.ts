@@ -58,13 +58,14 @@ export class GameLoopManager {
   startGame(room: Room) {
     const config = getDifficultyConfig(room.gameState.level);
     const seed = Date.now();
-    const maze = generateMaze(config.mazeWidth, config.mazeHeight, seed);
+    const maze = generateMaze(config.mazeWidth, config.mazeHeight, seed, config.mazeCellSize);
     if (config.irregularBorders) {
       applyIrregularBorders(maze, config.irregularComplexity, seed);
     }
 
-    const centerX = Math.floor(maze.width / 2) * CELL_SIZE + CELL_SIZE / 2;
-    const centerY = Math.floor(maze.height / 2) * CELL_SIZE + CELL_SIZE / 2;
+    const cs = maze.cellSize;
+    const centerX = Math.floor(maze.width / 2) * cs + cs / 2;
+    const centerY = Math.floor(maze.height / 2) * cs + cs / 2;
     const dollPos = placeDoll(maze, config.dollMinDistance, seed);
 
     room.gameState.phase = 'phase1';

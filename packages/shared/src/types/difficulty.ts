@@ -2,6 +2,7 @@ export interface DifficultyConfig {
   level: number;
   mazeWidth: number;
   mazeHeight: number;
+  mazeCellSize: number;
   clawSpeed: number;
   dollMinDistance: number;
   dollOutsideMaze: boolean;

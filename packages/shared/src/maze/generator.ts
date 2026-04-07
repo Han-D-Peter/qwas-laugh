@@ -1,5 +1,5 @@
 import type { MazeCell, MazeData, Vec2 } from '../types/game-state.js';
-import { CELL_SIZE } from '../constants/game.js';
+import { CELL_SIZE as DEFAULT_CELL_SIZE } from '../constants/game.js';
 
 /**
  * Seeded PRNG (mulberry32) for deterministic maze generation.
@@ -24,7 +24,7 @@ interface Neighbor {
 /**
  * Generate a maze using recursive backtracker (DFS) algorithm.
  */
-export function generateMaze(width: number, height: number, seed: number): MazeData {
+export function generateMaze(width: number, height: number, seed: number, cellSize: number = DEFAULT_CELL_SIZE): MazeData {
   const rng = mulberry32(seed);
 
   // Initialize all cells with all walls
@@ -74,7 +74,7 @@ export function generateMaze(width: number, height: number, seed: number): MazeD
     stack.push({ row: neighbor.row, col: neighbor.col });
   }
 
-  return { width, height, cells, seed, cellSize: CELL_SIZE };
+  return { width, height, cells, seed, cellSize };
 }
 
 /**

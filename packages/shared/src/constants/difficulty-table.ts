@@ -6,9 +6,9 @@ function lerp(a: number, b: number, t: number): number {
 
 // Anchor points at tier boundaries (every 4 levels)
 const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
-  // Tier 1: Levels 1-4
+  // Tier 1: Levels 1-4 (넓은 통로, 쉬운 미로)
   {
-    mazeWidth: 7, mazeHeight: 7, clawSpeed: 2,
+    mazeWidth: 7, mazeHeight: 7, mazeCellSize: 100, clawSpeed: 2,
     dollMinDistance: 3, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
@@ -18,7 +18,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 2: Levels 5-8
   {
-    mazeWidth: 10, mazeHeight: 10, clawSpeed: 2.5,
+    mazeWidth: 10, mazeHeight: 10, mazeCellSize: 90, clawSpeed: 2.5,
     dollMinDistance: 5, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
@@ -28,7 +28,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 3: Levels 9-12
   {
-    mazeWidth: 13, mazeHeight: 13, clawSpeed: 3,
+    mazeWidth: 13, mazeHeight: 13, mazeCellSize: 80, clawSpeed: 3,
     dollMinDistance: 7, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
@@ -38,7 +38,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 4: Levels 13-16
   {
-    mazeWidth: 16, mazeHeight: 16, clawSpeed: 3.5,
+    mazeWidth: 16, mazeHeight: 16, mazeCellSize: 70, clawSpeed: 3.5,
     dollMinDistance: 10, dollOutsideMaze: false,
     irregularBorders: true, irregularComplexity: 1,
     diagonalPlayerCount: 2,
@@ -48,7 +48,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 5: Levels 17-20
   {
-    mazeWidth: 19, mazeHeight: 19, clawSpeed: 4,
+    mazeWidth: 19, mazeHeight: 19, mazeCellSize: 65, clawSpeed: 4,
     dollMinDistance: 12, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 1,
     diagonalPlayerCount: 2,
@@ -58,7 +58,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 6: Levels 21-24
   {
-    mazeWidth: 22, mazeHeight: 22, clawSpeed: 4.5,
+    mazeWidth: 22, mazeHeight: 22, mazeCellSize: 60, clawSpeed: 4.5,
     dollMinDistance: 15, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
@@ -68,7 +68,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 7: Levels 25-28
   {
-    mazeWidth: 24, mazeHeight: 24, clawSpeed: 4.8,
+    mazeWidth: 24, mazeHeight: 24, mazeCellSize: 55, clawSpeed: 4.8,
     dollMinDistance: 18, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
@@ -78,7 +78,7 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
   },
   // Tier 8: Levels 29-30
   {
-    mazeWidth: 25, mazeHeight: 25, clawSpeed: 5,
+    mazeWidth: 25, mazeHeight: 25, mazeCellSize: 50, clawSpeed: 5,
     dollMinDistance: 20, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
@@ -99,6 +99,7 @@ function lerpConfig(a: Omit<DifficultyConfig, 'level'>, b: Omit<DifficultyConfig
   return {
     mazeWidth: Math.round(lerp(a.mazeWidth, b.mazeWidth, t)),
     mazeHeight: Math.round(lerp(a.mazeHeight, b.mazeHeight, t)),
+    mazeCellSize: Math.round(lerp(a.mazeCellSize, b.mazeCellSize, t)),
     clawSpeed: lerp(a.clawSpeed, b.clawSpeed, t),
     dollMinDistance: Math.round(lerp(a.dollMinDistance, b.dollMinDistance, t)),
     dollOutsideMaze: t >= 0.5 ? b.dollOutsideMaze : a.dollOutsideMaze,

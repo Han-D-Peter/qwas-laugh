@@ -106,14 +106,15 @@ export class GameEngine {
     this.seed = Date.now();
     this.phase = 'phase1';
 
-    this.maze = generateMaze(this.config.mazeWidth, this.config.mazeHeight, this.seed);
+    this.maze = generateMaze(this.config.mazeWidth, this.config.mazeHeight, this.seed, this.config.mazeCellSize);
     if (this.config.irregularBorders) {
       applyIrregularBorders(this.maze, this.config.irregularComplexity, this.seed);
     }
     this.clawSpeed = this.config.clawSpeed;
 
-    const centerX = Math.floor(this.maze.width / 2) * CELL_SIZE + CELL_SIZE / 2;
-    const centerY = Math.floor(this.maze.height / 2) * CELL_SIZE + CELL_SIZE / 2;
+    const cs = this.maze.cellSize;
+    const centerX = Math.floor(this.maze.width / 2) * cs + cs / 2;
+    const centerY = Math.floor(this.maze.height / 2) * cs + cs / 2;
     this.clawPos = { x: centerX, y: centerY };
     this.startPos = { ...this.clawPos };
 
