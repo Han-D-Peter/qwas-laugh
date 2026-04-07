@@ -1,0 +1,12 @@
+export const TICK_RATE = 20; // server ticks per second
+export const TICK_INTERVAL = 1000 / TICK_RATE;
+export const CELL_SIZE = 60; // pixels per maze cell
+export const CLAW_BOX_SIZE = 30;
+export const DOLL_BOX_SIZE = 30;
+export const OVERLAP_THRESHOLD = 0.10; // 10% minimum overlap
+export const MAX_LEVEL = 30;
+export const ROOM_CODE_LENGTH = 4;
+export const ROOM_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+export const PHASE2_KEY_RECOGNITION_TIME = 5000; // 5 seconds
+export const MIN_PLAYERS = 1; // 1 for dev/testing, 4 for production
+export const MAX_PLAYERS = 4;
