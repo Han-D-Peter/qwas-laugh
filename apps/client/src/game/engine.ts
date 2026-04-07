@@ -30,7 +30,7 @@ export interface GameInfo {
   p2Countdown: number;
 }
 
-type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' | 'suspense' | 'result';
+type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' | 'phase2_to_suspense' | 'suspense' | 'result';
 
 export class GameEngine {
   private app: Application;
@@ -241,11 +241,11 @@ export class GameEngine {
     this.lastResult = null;
     this.updateInfo();
 
-    // Short transition delay for visual effect
+    // Hold the overlap/probability A display for 2.5 seconds
     setTimeout(() => {
       if (this.destroyed) return;
       this.startPhase2();
-    }, 800);
+    }, 2500);
   }
 
   private startPhase2() {
@@ -320,18 +320,21 @@ export class GameEngine {
     if (overlap < OVERLAP_THRESHOLD) {
       this.lastResult = 'fail';
       this.coins++;
-      // Go back to Phase 1 start (same level)
       this.phase = 'result';
       this.updateInfo();
       setTimeout(() => {
         if (this.destroyed) return;
-        this.resetPhase1();
-        // Re-setup the current level's Phase 1
         this.setupLevel(this.level);
-      }, 1500);
+      }, 2000);
     } else {
       this.probabilityB = overlap;
-      this.startSuspense();
+      // Show Phase 2 overlap result before suspense
+      this.phase = 'phase2_to_suspense';
+      this.updateInfo();
+      setTimeout(() => {
+        if (this.destroyed) return;
+        this.startSuspense();
+      }, 2500);
     }
     this.updateInfo();
   }

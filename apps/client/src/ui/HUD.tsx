@@ -20,9 +20,10 @@ interface HUDProps {
 
 const PHASE_LABELS: Record<string, string> = {
   phase1: 'Phase 1 - 미로 탐색',
-  phase1_to_phase2: '전환 중...',
+  phase1_to_phase2: 'Phase 1 완료!',
   phase2_countdown: 'Phase 2 - 준비!',
   phase2: 'Phase 2 - 하강',
+  phase2_to_suspense: 'Phase 2 완료!',
   suspense: '결과 확인 중...',
   result: '결과',
   paused: '일시정지',
@@ -93,17 +94,63 @@ export function HUD({
       {/* Phase 1 → Phase 2 transition: show probability A */}
       {phase === 'phase1_to_phase2' && (
         <div style={centerOverlay}>
-          <div style={{ fontSize: 22, fontWeight: 'bold', color: '#6b5b95' }}>
+          <div style={{ fontSize: 22, fontWeight: 'bold', color: '#6b5b95', marginBottom: 4 }}>
             Phase 1 완료!
           </div>
-          <div style={probBoxStyle}>
-            <span style={{ color: '#8b7bb5', fontSize: 14 }}>확률 A (겹침도)</span>
-            <span style={{ fontSize: 36, fontWeight: 'bold', color: '#4a3f6b' }}>
+          <div style={{ fontSize: 14, color: '#8b7bb5', marginBottom: 12 }}>
+            집게와 인형 겹침도
+          </div>
+          <div style={{
+            ...probBoxStyle,
+            animation: 'pop-in 0.5s ease-out',
+          }}>
+            <span style={{ color: '#8b7bb5', fontSize: 13 }}>확률 A</span>
+            <span style={{ fontSize: 48, fontWeight: 'bold', color: '#3a7bc8' }}>
               {probabilityA}%
             </span>
           </div>
-          <div style={{ fontSize: 13, color: '#9b8ec4', marginTop: 8 }}>
+          <div style={{ fontSize: 13, color: '#9b8ec4', marginTop: 12 }}>
             Phase 2로 이동합니다...
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2 → Suspense transition: show probability B */}
+      {phase === 'phase2_to_suspense' && (
+        <div style={centerOverlay}>
+          <div style={{ fontSize: 22, fontWeight: 'bold', color: '#6b5b95', marginBottom: 4 }}>
+            Phase 2 완료!
+          </div>
+          <div style={{ fontSize: 14, color: '#8b7bb5', marginBottom: 12 }}>
+            집게와 인형 겹침도
+          </div>
+          <div style={{
+            ...probBoxStyle,
+            animation: 'pop-in 0.5s ease-out',
+          }}>
+            <span style={{ color: '#8b7bb5', fontSize: 13 }}>확률 B</span>
+            <span style={{ fontSize: 48, fontWeight: 'bold', color: '#3a7bc8' }}>
+              {probabilityB}%
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 14 }}>
+            <div style={probBoxSmall}>
+              <span style={{ fontSize: 11, color: '#8b7bb5' }}>확률 A</span>
+              <span style={{ fontSize: 18, fontWeight: 'bold', color: '#4a3f6b' }}>{probabilityA}%</span>
+            </div>
+            <span style={{ fontSize: 18, color: '#9b8ec4', alignSelf: 'center' }}>x</span>
+            <div style={probBoxSmall}>
+              <span style={{ fontSize: 11, color: '#8b7bb5' }}>확률 B</span>
+              <span style={{ fontSize: 18, fontWeight: 'bold', color: '#4a3f6b' }}>{probabilityB}%</span>
+            </div>
+            <span style={{ fontSize: 18, color: '#9b8ec4', alignSelf: 'center' }}>=</span>
+            <div style={{ ...probBoxSmall, background: 'rgba(126, 203, 245, 0.15)' }}>
+              <span style={{ fontSize: 11, color: '#5ba3d9' }}>최종</span>
+              <span style={{ fontSize: 18, fontWeight: 'bold', color: '#3a7bc8' }}>{finalProb}%</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 13, color: '#9b8ec4', marginTop: 10 }}>
+            결과를 확인합니다...
           </div>
         </div>
       )}
@@ -256,30 +303,29 @@ export function HUD({
             </>
           )}
 
-          {/* Phase: Drumroll */}
+          {/* Phase: Drumroll — shaking tension */}
           {suspensePhase === 'drumroll' && (
             <>
               <div style={{
                 fontSize: 20, fontWeight: 'bold', color: '#6b5b95',
                 marginBottom: 16,
+                animation: 'shake 0.15s ease-in-out infinite',
               }}>
                 인형을 뽑을 수 있을까...?
               </div>
               <div style={{
-                fontSize: 48, fontWeight: 'bold', color: '#4a3f6b',
-                animation: 'pulse 0.6s ease-in-out infinite',
+                fontSize: 56, fontWeight: 'bold', color: '#4a3f6b',
+                animation: 'shake 0.1s ease-in-out infinite, pulse 0.6s ease-in-out infinite',
               }}>
                 {finalProb}%
               </div>
               <div style={{
-                marginTop: 12,
-                width: 40, height: 40,
-                border: '4px solid rgba(155, 142, 196, 0.3)',
-                borderTopColor: '#9b8ec4',
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-                margin: '12px auto 0',
-              }} />
+                marginTop: 16,
+                fontSize: 32,
+                animation: 'shake 0.12s ease-in-out infinite',
+              }}>
+                🎰
+              </div>
             </>
           )}
 
@@ -336,6 +382,11 @@ export function HUD({
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-3px) rotate(-1deg); }
+          75% { transform: translateX(3px) rotate(1deg); }
         }
       `}</style>
     </>
