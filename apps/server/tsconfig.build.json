@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {
-      "@qwas/shared": ["../../packages/shared/dist/index.js"]
+      "@qwas/shared": ["../../packages/shared/dist/index.d.ts"]
     }
   },
   "include": ["src"]
