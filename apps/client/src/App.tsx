@@ -321,15 +321,23 @@ export function App() {
         playerNames={playerNames}
         onRestart={handleRestart}
       />
-      {appMode === 'multiplayer' && myPlayerId && (
-        <PlayerDirectionOverlay players={players} myPlayerId={myPlayerId} />
-      )}
       {appMode === 'multiplayer' && (
-        <VoiceControls
-          voiceManager={voiceManager}
-          playerNames={playerNames}
-          playerIds={players.map(p => p.id)}
-        />
+        <div style={{
+          position: 'absolute', top: 44, left: 8, right: 8,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          pointerEvents: 'none', zIndex: 5,
+        }}>
+          <div style={{ pointerEvents: 'auto' }}>
+            {myPlayerId && <PlayerDirectionOverlay players={players} myPlayerId={myPlayerId} />}
+          </div>
+          <div style={{ pointerEvents: 'auto' }}>
+            <VoiceControls
+              voiceManager={voiceManager}
+              playerNames={playerNames}
+              playerIds={players.map(p => p.id)}
+            />
+          </div>
+        </div>
       )}
       {/* Touch controls for mobile */}
       {isTouchDevice && (

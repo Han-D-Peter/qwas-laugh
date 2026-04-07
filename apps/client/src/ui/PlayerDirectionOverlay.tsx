@@ -85,10 +85,6 @@ export function PlayerDirectionOverlay({ players, myPlayerId }: PlayerDirectionO
 }
 
 const containerStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 44,
-  left: '50%',
-  transform: 'translateX(-50%)',
   display: 'flex',
   gap: 6,
   padding: '4px',
@@ -96,7 +92,6 @@ const containerStyle: React.CSSProperties = {
   background: 'rgba(255, 255, 255, 0.88)',
   boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
   backdropFilter: 'blur(8px)',
-  zIndex: 5,
 };
 
 const playerCardStyle: React.CSSProperties = {
