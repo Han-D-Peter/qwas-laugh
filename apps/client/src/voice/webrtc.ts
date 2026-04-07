@@ -32,6 +32,8 @@ export class VoiceChatManager {
   private onPeersChanged: () => void;
   private pendingPeers = new Set<string>();
   private iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS;
+  /** Used for "polite peer" pattern: lower ID is polite (yields on glare) */
+  private myId: string = '';
 
   constructor(socket: GameSocket, onPeersChanged: () => void) {
     this.socket = socket;
@@ -40,9 +42,29 @@ export class VoiceChatManager {
   }
 
   private setupSignaling() {
+    // ─── Receive offer ───
     this.socket.rawSocket.on('voice:offer',
       async ({ fromId, offer }: { fromId: string; offer: RTCSessionDescriptionInit }) => {
-        const peer = this.getOrCreatePeer(fromId);
+        // "Polite peer" glare handling: if we already sent an offer
+        // and we are the polite side (lower ID), rollback ours and accept theirs
+        let peer = this.peers.get(fromId);
+        const isPolite = this.myId < fromId;
+
+        if (peer) {
+          const state = peer.connection.signalingState;
+          if (state === 'have-local-offer') {
+            if (!isPolite) {
+              // We are impolite: ignore their offer, they should accept ours
+              console.log('[voice] Ignoring offer from', fromId, '(we are impolite)');
+              return;
+            }
+            // We are polite: rollback our offer, accept theirs
+            console.log('[voice] Rolling back our offer for', fromId, '(we are polite)');
+            await peer.connection.setLocalDescription({ type: 'rollback' });
+          }
+        }
+
+        peer = this.getOrCreatePeer(fromId);
         try {
           await peer.connection.setRemoteDescription(new RTCSessionDescription(offer));
           const answer = await peer.connection.createAnswer();
@@ -54,19 +76,25 @@ export class VoiceChatManager {
       }
     );
 
+    // ─── Receive answer ───
     this.socket.rawSocket.on('voice:answer',
       async ({ fromId, answer }: { fromId: string; answer: RTCSessionDescriptionInit }) => {
         const peer = this.peers.get(fromId);
-        if (peer) {
-          try {
-            await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
-          } catch (e) {
-            console.warn('[voice] Failed to handle answer from', fromId, e);
-          }
+        if (!peer) return;
+        // Only set remote description if we're expecting an answer
+        if (peer.connection.signalingState !== 'have-local-offer') {
+          console.log('[voice] Ignoring answer from', fromId, 'state:', peer.connection.signalingState);
+          return;
+        }
+        try {
+          await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (e) {
+          console.warn('[voice] Failed to handle answer from', fromId, e);
         }
       }
     );
 
+    // ─── Receive ICE candidate ───
     this.socket.rawSocket.on('voice:ice-candidate',
       async ({ fromId, candidate }: { fromId: string; candidate: RTCIceCandidateInit }) => {
         const peer = this.peers.get(fromId);
@@ -74,20 +102,16 @@ export class VoiceChatManager {
           try {
             await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
           } catch (e) {
-            console.warn('[voice] Failed to add ICE candidate from', fromId, e);
+            // May fail if remote description not set yet — safe to ignore
           }
         }
       }
     );
   }
 
-  /**
-   * Start microphone capture and connect to all pending/existing peers.
-   * @param existingPlayerIds - IDs of players already in the room
-   */
   async start(existingPlayerIds: string[] = []): Promise<boolean> {
-    // Fetch TURN credentials from server
     this.iceServers = await fetchIceServers();
+    this.myId = this.socket.id || '';
 
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -99,14 +123,13 @@ export class VoiceChatManager {
     }
 
     // Add existing players to pending list
-    const myId = this.socket.id;
     for (const id of existingPlayerIds) {
-      if (id !== myId) {
+      if (id !== this.myId) {
         this.pendingPeers.add(id);
       }
     }
 
-    // Connect to all pending peers now that we have localStream
+    // Connect to all pending peers
     for (const peerId of this.pendingPeers) {
       await this.initiateConnection(peerId);
     }
@@ -115,14 +138,10 @@ export class VoiceChatManager {
     return true;
   }
 
-  /**
-   * Queue a peer for connection. If localStream is ready, connect immediately.
-   */
   async connectToPeer(peerId: string) {
-    if (peerId === this.socket.id) return;
+    if (peerId === this.myId) return;
 
     if (!this.localStream) {
-      // Queue for later when start() is called
       this.pendingPeers.add(peerId);
       return;
     }
@@ -133,12 +152,11 @@ export class VoiceChatManager {
   private async initiateConnection(peerId: string) {
     const peer = this.getOrCreatePeer(peerId);
 
-    // Add local tracks if not already added
-    const senders = peer.connection.getSenders();
-    if (this.localStream && senders.length === 0) {
-      for (const track of this.localStream.getTracks()) {
-        peer.connection.addTrack(track, this.localStream);
-      }
+    // Don't send an offer if we already have an active/connecting state
+    const state = peer.connection.signalingState;
+    if (state !== 'stable' && state !== 'closed') {
+      console.log('[voice] Skipping offer to', peerId, 'state:', state);
+      return;
     }
 
     try {
@@ -163,19 +181,34 @@ export class VoiceChatManager {
       audioLevel: 0,
     };
 
+    // ICE candidate relay
     connection.onicecandidate = (event) => {
       if (event.candidate) {
         this.socket.sendVoiceIceCandidate(peerId, event.candidate.toJSON());
       }
     };
 
+    // Receive remote tracks
     connection.ontrack = (event) => {
       peer!.remoteStream = event.streams[0] || new MediaStream([event.track]);
       this.startAudioLevelMonitor(peer!);
       this.onPeersChanged();
     };
 
-    // Add local tracks if available
+    // Monitor connection state for auto-reconnect
+    connection.onconnectionstatechange = () => {
+      const s = connection.connectionState;
+      console.log(`[voice] Peer ${peerId} connection: ${s}`);
+      if (s === 'failed') {
+        // Tear down and retry
+        this.removePeer(peerId);
+        if (this.localStream) {
+          setTimeout(() => this.initiateConnection(peerId), 1000);
+        }
+      }
+    };
+
+    // Add local tracks
     if (this.localStream) {
       for (const track of this.localStream.getTracks()) {
         connection.addTrack(track, this.localStream);
@@ -207,7 +240,7 @@ export class VoiceChatManager {
       };
       monitor();
     } catch {
-      // AudioContext may not be available in all environments
+      // AudioContext may not be available
     }
   }
 
