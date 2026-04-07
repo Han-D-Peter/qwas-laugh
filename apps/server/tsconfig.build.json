@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "@qwas/shared": ["../../packages/shared/dist/index.js"]
+    }
+  },
+  "include": ["src"]
+}

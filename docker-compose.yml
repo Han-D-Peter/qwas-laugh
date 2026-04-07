@@ -1,0 +1,42 @@
+services:
+  # ── Frontend (nginx + Vite build) ──
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      args:
+        VITE_SERVER_URL: ""  # Empty = same origin (nginx proxies /socket.io)
+    ports:
+      - "${CLIENT_PORT:-80}:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  # ── Backend (Node.js + Socket.IO) ──
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "${SERVER_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    restart: unless-stopped
+
+  # ── TURN Server (coturn) for WebRTC NAT traversal ──
+  turn:
+    image: coturn/coturn:4.6
+    ports:
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "${TURN_PORT:-3478}:3478/tcp"
+      - "${TURN_TLS_PORT:-5349}:5349/tcp"
+      - "49152-49200:49152-49200/udp"  # Relay ports
+    environment:
+      - TURN_REALM=${TURN_REALM:-claw.example.com}
+      - TURN_USER=${TURN_USER:-clawgame}
+      - TURN_PASSWORD=${TURN_PASSWORD:-changeme}
+    volumes:
+      - ./deploy/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+    restart: unless-stopped

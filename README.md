@@ -146,6 +146,56 @@ Recursive Backtracker (DFS) 알고리즘에 시드 기반 PRNG(`mulberry32`)를 
 | 7 | 25-28 | 복잡한 불규칙 테두리, 최대 드리프트 |
 | 8 | 29-30 | 모든 난이도 요소 최대치 |
 
+## 배포 (Docker)
+
+### 요구 사항
+
+- Docker + Docker Compose
+
+### 환경 설정
+
+```bash
+cp .env.example .env
+# .env 파일을 편집하여 TURN 서버 비밀번호 등을 변경
+```
+
+### 빌드 및 실행
+
+```bash
+# 전체 빌드 + 실행
+docker compose up -d --build
+
+# 로그 확인
+docker compose logs -f
+```
+
+### 서비스 구성
+
+| 서비스 | 포트 | 설명 |
+|--------|------|------|
+| **client** | 80 | nginx로 프론트엔드 정적 파일 서빙 + WebSocket 프록시 |
+| **server** | 3001 | Node.js + Socket.IO 게임 서버 |
+| **turn** | 3478 (UDP/TCP) | coturn TURN 서버 (WebRTC NAT 통과) |
+
+### 아키텍처
+
+```
+브라우저 ──HTTP/WS──▸ nginx(:80)
+                        ├── 정적 파일 (React 빌드)
+                        └── /socket.io/ ──proxy──▸ server(:3001)
+
+브라우저 ──WebRTC──▸ turn(:3478)
+                        └── STUN/TURN 릴레이
+```
+
+### 프로덕션 배포 체크리스트
+
+- [ ] `.env`에서 `TURN_PASSWORD`를 안전한 값으로 변경
+- [ ] `TURN_REALM`을 실제 도메인으로 설정
+- [ ] `TURN_SERVER_URL`을 `turn:your-domain.com:3478`로 설정
+- [ ] SSL 인증서 적용 (nginx에 HTTPS 설정)
+- [ ] `CLIENT_ORIGIN` 환경변수로 CORS 제한
+
 ## 레퍼런스
 
 - [토리의 모험 (WASD)](https://store.steampowered.com/app/3811390/WASD/?l=koreana)

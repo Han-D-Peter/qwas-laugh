@@ -1,9 +1,20 @@
 import type { GameSocket } from '../network/socket.js';
 
-const ICE_SERVERS: RTCIceServer[] = [
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
+
+async function fetchIceServers(): Promise<RTCIceServer[]> {
+  try {
+    const res = await fetch('/api/turn-credentials');
+    if (res.ok) {
+      const data = await res.json();
+      return data.iceServers;
+    }
+  } catch { /* fallback */ }
+  return DEFAULT_ICE_SERVERS;
+}
 
 export interface PeerInfo {
   id: string;
@@ -18,8 +29,8 @@ export class VoiceChatManager {
   private socket: GameSocket;
   private muted = false;
   private onPeersChanged: () => void;
-  /** Peer IDs we should connect to once localStream is available */
   private pendingPeers = new Set<string>();
+  private iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS;
 
   constructor(socket: GameSocket, onPeersChanged: () => void) {
     this.socket = socket;
@@ -74,6 +85,9 @@ export class VoiceChatManager {
    * @param existingPlayerIds - IDs of players already in the room
    */
   async start(existingPlayerIds: string[] = []): Promise<boolean> {
+    // Fetch TURN credentials from server
+    this.iceServers = await fetchIceServers();
+
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
@@ -139,7 +153,7 @@ export class VoiceChatManager {
     let peer = this.peers.get(peerId);
     if (peer) return peer;
 
-    const connection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const connection = new RTCPeerConnection({ iceServers: this.iceServers });
 
     peer = {
       id: peerId,
