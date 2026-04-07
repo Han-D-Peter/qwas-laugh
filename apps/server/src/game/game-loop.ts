@@ -199,15 +199,20 @@ export class GameLoopManager {
     const game = this.games.get(roomCode);
     if (!game) return;
 
-    const phase = game.room.gameState.phase;
+    try {
+      const phase = game.room.gameState.phase;
 
-    if (phase === 'phase1') {
-      this.tickPhase1(game);
-    } else if (phase === 'phase2') {
-      this.tickPhase2(game);
+      if (phase === 'phase1') {
+        this.tickPhase1(game);
+      } else if (phase === 'phase2') {
+        this.tickPhase2(game);
+      }
+
+      this.broadcastState(roomCode);
+    } catch (err) {
+      console.error(`[game-loop] Tick error for room ${roomCode}:`, err);
+      // Don't crash the interval — keep ticking
     }
-
-    this.broadcastState(roomCode);
   }
 
   private tickPhase1(game: ActiveGame) {

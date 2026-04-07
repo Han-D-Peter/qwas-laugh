@@ -51,6 +51,14 @@ app.get('/api/turn-credentials', (_req, res) => {
 
 setupSocketHandlers(io);
 
+// Prevent server crash on unhandled errors
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception:', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[server] Unhandled rejection:', err);
+});
+
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

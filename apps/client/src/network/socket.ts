@@ -19,11 +19,16 @@ export class GameSocket {
 
   connectionState: ConnectionState = 'disconnected';
   roomInfo: RoomInfo | null = null;
+  _playerName: string = '';
 
   constructor() {
     this.socket = io(SERVER_URL, {
       autoConnect: false,
       transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     this.setupListeners();
@@ -33,11 +38,26 @@ export class GameSocket {
     this.socket.on('connect', () => {
       this.connectionState = 'connected';
       this.onRoomEvent?.('connection', { connected: true });
+
+      // Auto-rejoin room after reconnection
+      if (this.roomInfo?.code && this._playerName) {
+        console.log('[socket] Reconnected, rejoining room', this.roomInfo.code);
+        this.socket.emit('room:join', {
+          code: this.roomInfo.code,
+          playerName: this._playerName,
+        });
+      }
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on('disconnect', (reason) => {
       this.connectionState = 'disconnected';
-      this.onRoomEvent?.('connection', { connected: false });
+      console.log('[socket] Disconnected:', reason);
+      this.onRoomEvent?.('connection', { connected: false, reason });
+    });
+
+    this.socket.on('reconnecting', () => {
+      this.connectionState = 'connecting';
+      this.onRoomEvent?.('connection', { reconnecting: true });
     });
 
     this.socket.on('room:created', ({ code, playerId }: { code: string; playerId: string }) => {
@@ -87,10 +107,12 @@ export class GameSocket {
   }
 
   createRoom(playerName: string) {
+    this._playerName = playerName;
     this.socket.emit('room:create', { playerName });
   }
 
   joinRoom(code: string, playerName: string) {
+    this._playerName = playerName;
     this.socket.emit('room:join', { code, playerName });
   }
 

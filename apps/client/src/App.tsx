@@ -30,6 +30,7 @@ export function App() {
   const [voiceManager, setVoiceManager] = useState<VoiceChatManager | null>(null);
   const [playerNames, setPlayerNames] = useState<Map<string, string>>(new Map());
   const [pauseMessage, setPauseMessage] = useState<string | null>(null);
+  const [connectionLost, setConnectionLost] = useState(false);
 
   const [gameInfo, setGameInfo] = useState({
     level: 1,
@@ -113,6 +114,13 @@ export function App() {
           break;
         case 'room:error':
           setError(data.message);
+          break;
+        case 'connection':
+          if (data.connected) {
+            setConnectionLost(false);
+          } else if (data.connected === false && appMode === 'multiplayer') {
+            setConnectionLost(true);
+          }
           break;
       }
     });
@@ -365,6 +373,28 @@ export function App() {
           }}>
           코드: <span style={{ fontWeight: 700, color: '#4a3f6b', letterSpacing: 2, fontFamily: 'monospace' }}>{roomCode}</span>
           <span style={{ marginLeft: 6, fontSize: 10 }}>📋</span>
+        </div>
+      )}
+      {/* Connection lost overlay */}
+      {connectionLost && !pauseMessage && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(40, 35, 55, 0.5)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          zIndex: 99, backdropFilter: 'blur(2px)',
+        }}>
+          <div style={{
+            width: 36, height: 36,
+            border: '3px solid rgba(255,255,255,0.3)',
+            borderTopColor: '#fff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: 16,
+          }} />
+          <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>
+            서버 재연결 중...
+          </div>
         </div>
       )}
       {/* Pause overlay */}
