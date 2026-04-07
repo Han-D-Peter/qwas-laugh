@@ -12,6 +12,8 @@ export function App() {
     phase: 'phase1' as string,
     overlapPercent: 0,
     lastResult: null as string | null,
+    suspenseProgress: 0,
+    suspensePhase: '' as string,
   });
 
   useEffect(() => {
@@ -45,6 +47,8 @@ export function App() {
         phase={gameInfo.phase}
         overlapPercent={gameInfo.overlapPercent}
         lastResult={gameInfo.lastResult}
+        suspenseProgress={gameInfo.suspenseProgress}
+        suspensePhase={gameInfo.suspensePhase}
         onRestart={handleRestart}
       />
     </div>

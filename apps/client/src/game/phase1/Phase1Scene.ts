@@ -6,6 +6,7 @@ import { drawDoll, DOLL_TYPES } from '../sprites/doll.js';
 
 export class Phase1Scene {
   private parent: Container;
+  private container: Container;
   private mazeGraphics: Graphics;
   private clawContainer: Container;
   private dollContainer: Container;
@@ -14,18 +15,23 @@ export class Phase1Scene {
 
   constructor(parent: Container) {
     this.parent = parent;
+    this.container = new Container();
     this.mazeGraphics = new Graphics();
     this.clawContainer = new Container();
     this.dollContainer = new Container();
     this.clawBoxGraphics = new Graphics();
     this.dollBoxGraphics = new Graphics();
 
-    parent.addChild(this.mazeGraphics);
-    parent.addChild(this.dollContainer);
-    parent.addChild(this.dollBoxGraphics);
-    parent.addChild(this.clawContainer);
-    parent.addChild(this.clawBoxGraphics);
+    this.container.addChild(this.mazeGraphics);
+    this.container.addChild(this.dollContainer);
+    this.container.addChild(this.dollBoxGraphics);
+    this.container.addChild(this.clawContainer);
+    this.container.addChild(this.clawBoxGraphics);
+    parent.addChild(this.container);
   }
+
+  show() { this.container.visible = true; }
+  hide() { this.container.visible = false; }
 
   buildMaze(maze: MazeData) {
     this.mazeGraphics.clear();
