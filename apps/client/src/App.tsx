@@ -169,8 +169,8 @@ export function App() {
     });
 
     // Listen for overlap results from server grab calculations
-    gs.rawSocket.on('game:overlap', ({ phase, overlap }: { phase: string; overlap: number }) => {
-      engineRef.current?.setServerOverlap(phase, overlap);
+    gs.rawSocket.on('game:overlap', ({ phase, overlap, serverClawPos, serverDollPos }: any) => {
+      engineRef.current?.setServerOverlap(phase, overlap, serverClawPos, serverDollPos);
     });
 
     gs.connect();

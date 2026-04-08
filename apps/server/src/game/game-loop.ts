@@ -305,12 +305,22 @@ export class GameLoopManager {
     };
 
     const overlap = calculateOverlap(clawBox, dollBox);
+
+    console.log('[grab] Phase1 grab:', {
+      clawPos: game.clawPos,
+      dollPos: game.dollPos,
+      clawBox, dollBox,
+      overlap: Math.round(overlap * 100) + '%',
+      clawDir: game.clawDir,
+    });
     game.room.gameState.probabilityA = overlap;
 
-    // Broadcast the overlap result to all players
+    // Broadcast the overlap result with debug positions to all players
     this.io.to(game.room.code).emit('game:overlap', {
       phase: 'phase1',
       overlap: Math.round(overlap * 100),
+      serverClawPos: { ...game.clawPos },
+      serverDollPos: { ...game.dollPos },
     });
 
     if (overlap < OVERLAP_THRESHOLD) {

@@ -230,6 +230,10 @@ export class GameEngine {
     };
 
     const overlap = calculateOverlap(clawBox, dollBox);
+    console.log('[grab] claw=' + JSON.stringify(this.clawPos) +
+      ' doll=' + JSON.stringify(this.dollPos) +
+      ' overlap=' + Math.round(overlap * 100) + '%' +
+      ' dist=' + Math.sqrt((this.clawPos.x - this.dollPos.x) ** 2 + (this.clawPos.y - this.dollPos.y) ** 2).toFixed(0));
     this.lastOverlap = overlap * 100;
 
     if (overlap < OVERLAP_THRESHOLD) {
@@ -555,8 +559,14 @@ export class GameEngine {
   /**
    * Receive overlap result from server (multiplayer).
    */
-  setServerOverlap(phase: string, overlapPercent: number) {
+  setServerOverlap(phase: string, overlapPercent: number, serverClawPos?: any, serverDollPos?: any) {
     this.lastOverlap = overlapPercent;
+    if (serverClawPos) {
+      console.log('[grab-server] overlap=' + overlapPercent + '% serverClaw=' + JSON.stringify(serverClawPos) +
+        ' serverDoll=' + JSON.stringify(serverDollPos) +
+        ' clientClaw=' + JSON.stringify(this.clawPos) +
+        ' clientDoll=' + JSON.stringify(this.dollPos));
+    }
     if (phase === 'phase1') {
       this.probabilityA = overlapPercent / 100;
     } else if (phase === 'phase2') {
