@@ -33,6 +33,8 @@ interface ActiveGame {
   /** Player IDs assigned to Phase 2 left/right controls */
   p2LeftPlayerId: string | null;
   p2RightPlayerId: string | null;
+  /** Prevents double-grab */
+  grabLocked: boolean;
   // Queued input per player (latest direction change)
   inputQueue: Map<string, AnyDirection>;
   // Phase 2 input queue
@@ -122,6 +124,7 @@ export class GameLoopManager {
       probabilityB: 0,
       p2LeftPlayerId: null,
       p2RightPlayerId: null,
+      grabLocked: false,
       inputQueue: new Map(),
       p2InputQueue: new Map(),
     };
@@ -197,9 +200,14 @@ export class GameLoopManager {
     // Only host can grab
     if (game.room.hostId !== playerId) return;
 
+    // Prevent double-grab
+    if (game.grabLocked) return;
+
     if (game.room.gameState.phase === 'phase1') {
+      game.grabLocked = true;
       this.phase1Grab(game);
     } else if (game.room.gameState.phase === 'phase2') {
+      game.grabLocked = true;
       this.phase2Grab(game);
     }
   }
@@ -443,6 +451,9 @@ export class GameLoopManager {
       pathWidth: game.p2Path.pathWidth,
     };
 
+    // Unlock grab for Phase 2
+    game.grabLocked = false;
+
     this.io.to(game.room.code).emit('game:phase-change', {
       phase: 'phase2',
       data: { p2Players: p2Players.map(p => p.id) },
@@ -455,6 +466,7 @@ export class GameLoopManager {
     game.room.gameState.coins++;
     game.room.gameState.claw.position = { ...game.startPos };
     game.room.gameState.claw.direction = { x: 0, y: 0 };
+    game.grabLocked = false;
   }
 
   private failAndResetToPhase1(game: ActiveGame) {

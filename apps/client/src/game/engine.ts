@@ -78,6 +78,7 @@ export class GameEngine {
   private suspenseProgress = 0;
   private suspensePhase = '';
   private seed = 0;
+  private grabLocked = false;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
   /**
    * When true, the engine only renders server state (no local simulation or input).
@@ -161,6 +162,7 @@ export class GameEngine {
     this.lastResult = null;
     this.suspenseProgress = 0;
     this.suspensePhase = '';
+    this.grabLocked = false;
     this.updateInfo();
   }
 
@@ -172,6 +174,7 @@ export class GameEngine {
     this.probabilityA = 0;
     this.probabilityB = 0;
     this.lastOverlap = 0;
+    this.grabLocked = false;
 
     this.phase1Scene.show();
     this.phase2Scene.hide();
@@ -193,7 +196,9 @@ export class GameEngine {
           case 'ArrowDown':  this.clawDir = diag ? { x: d, y: d }   : { x: 0, y: 1 };  e.preventDefault(); break;
           case 'ArrowLeft':  this.clawDir = diag ? { x: -d, y: d }  : { x: -1, y: 0 }; e.preventDefault(); break;
           case 'ArrowRight': this.clawDir = diag ? { x: d, y: -d }  : { x: 1, y: 0 };  e.preventDefault(); break;
-          case ' ': this.attemptPhase1Grab(); e.preventDefault(); break;
+          case ' ':
+            if (!this.grabLocked) { this.grabLocked = true; this.attemptPhase1Grab(); }
+            e.preventDefault(); break;
         }
       }
 
@@ -202,7 +207,9 @@ export class GameEngine {
         switch (e.key) {
           case 'ArrowLeft':  this.p2ClawX -= 6; e.preventDefault(); break;
           case 'ArrowRight': this.p2ClawX += 6; e.preventDefault(); break;
-          case ' ': this.attemptPhase2Grab(); e.preventDefault(); break;
+          case ' ':
+            if (!this.grabLocked) { this.grabLocked = true; this.attemptPhase2Grab(); }
+            e.preventDefault(); break;
         }
       }
 
@@ -274,6 +281,8 @@ export class GameEngine {
     this.p2DescentSpeed = 1.8 + this.level * 0.08;
     this.p2DriftOffset = 0;
     this.p2DriftTime = 0;
+
+    this.grabLocked = false;
 
     // In local mode, randomly assign left/right to 2 virtual players
     if (!this.remoteMode) {
@@ -616,11 +625,13 @@ export class GameEngine {
 
   /** Handle grab input from touch controls (local mode) */
   handleGrab() {
-    if (this.destroyed || this.remoteMode) return;
+    if (this.destroyed || this.remoteMode || this.grabLocked) return;
 
     if (this.phase === 'phase1') {
+      this.grabLocked = true;
       this.attemptPhase1Grab();
     } else if (this.phase === 'phase2') {
+      this.grabLocked = true;
       this.attemptPhase2Grab();
     }
   }
