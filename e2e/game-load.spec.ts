@@ -30,6 +30,6 @@ test.describe('Game Loading', () => {
 
   test('should display controls hint', async ({ page }) => {
     await startLocalGame(page);
-    await expect(page.getByText('Arrow keys')).toBeVisible();
+    await expect(page.getByText('조작법')).toBeVisible();
   });
 });

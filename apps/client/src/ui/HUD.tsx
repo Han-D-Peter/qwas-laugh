@@ -64,18 +64,30 @@ export function HUD({
         <div style={pillStyle}>Coin:{coins}</div>
       </div>
 
-      {/* Keyboard controls hint — hidden on touch/mobile devices */}
-      {('ontouchstart' in globalThis || (typeof window !== 'undefined' && window.innerWidth <= 768)) ? null : (
+      {/* Keyboard controls panel — PC only */}
+      {!('ontouchstart' in globalThis) && (typeof window === 'undefined' || window.innerWidth > 768) && (
         <div style={{
-          position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-          ...pillStyle, fontSize: 11, opacity: 0.6,
+          position: 'absolute', bottom: 16, right: 16,
+          background: 'rgba(255,255,255,0.88)',
+          borderRadius: 14, padding: '10px 14px',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          backdropFilter: 'blur(8px)',
+          fontSize: 12, color: '#4a3f6b',
+          lineHeight: 1.8,
         }}>
-          {phase === 'phase2'
-            ? '좌/우 Arrow: 집게 이동 | Space: 집기'
-            : level >= 21
-              ? 'Arrow keys: 대각선 이동 | Space: 집기 | R: 재시작'
-              : 'Arrow keys: 방향 변경 | Space: 집기 | R: 재시작'
-          }
+          <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 11, color: '#8b7bb5' }}>조작법</div>
+          {phase === 'phase2' ? (
+            <>
+              <div><Key k="←" /> <Key k="→" /> 집게 좌우 이동</div>
+              <div><Key k="Space" /> 집기 (방장)</div>
+            </>
+          ) : (
+            <>
+              <div><Key k="↑" /> <Key k="↓" /> <Key k="←" /> <Key k="→" /> {level >= 21 ? '대각선 이동' : '방향 변경'}</div>
+              <div><Key k="Space" /> 집기 (방장)</div>
+              <div><Key k="R" /> 재시작</div>
+            </>
+          )}
         </div>
       )}
 
@@ -445,3 +457,25 @@ const roleBoxStyle: React.CSSProperties = {
   borderRadius: 14,
   minWidth: 100,
 };
+
+function Key({ k }: { k: string }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      background: '#f0eaf5',
+      border: '1px solid #d4c8e0',
+      borderRadius: 5,
+      padding: '1px 6px',
+      fontSize: 11,
+      fontWeight: 700,
+      fontFamily: 'monospace',
+      color: '#6b5b95',
+      marginRight: 2,
+      minWidth: k.length > 2 ? undefined : 20,
+      textAlign: 'center',
+      boxShadow: '0 1px 0 #c4b8d8',
+    }}>
+      {k}
+    </span>
+  );
+}
