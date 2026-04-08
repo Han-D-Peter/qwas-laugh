@@ -304,6 +304,8 @@ export function App() {
         onJoinRoom={handleJoinRoom}
         onStartGame={handleStartGame}
         onStartLocal={startLocalGame}
+        voiceManager={voiceManager}
+        playerNames={playerNames}
       />
     );
   }

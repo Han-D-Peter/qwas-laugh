@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { PlayerState } from '@qwas/shared';
+import type { VoiceChatManager } from '../voice/webrtc.js';
+import { VoiceControls } from './VoiceControls.js';
 
 interface LobbyProps {
   mode: 'menu' | 'creating' | 'joining' | 'waiting';
@@ -11,11 +13,14 @@ interface LobbyProps {
   onJoinRoom: (code: string, name: string) => void;
   onStartGame: () => void;
   onStartLocal: () => void;
+  voiceManager: VoiceChatManager | null;
+  playerNames: Map<string, string>;
 }
 
 export function Lobby({
   mode, roomCode, players, isHost, error,
   onCreateRoom, onJoinRoom, onStartGame, onStartLocal,
+  voiceManager, playerNames,
 }: LobbyProps) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -119,6 +124,18 @@ export function Lobby({
                   대기 중...
                 </div>
               ))}
+            </div>
+
+            {/* Voice chat in lobby */}
+            <div style={{
+              margin: '16px 0', padding: '12px',
+              background: '#f8f4ff', borderRadius: 12,
+            }}>
+              <VoiceControls
+                voiceManager={voiceManager}
+                playerNames={playerNames}
+                playerIds={players.map(p => p.id)}
+              />
             </div>
 
             {isHost && (
