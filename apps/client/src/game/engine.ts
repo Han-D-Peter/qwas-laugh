@@ -544,6 +544,59 @@ export class GameEngine {
     });
   }
 
+  private setupPhase2FromState(state: import('@qwas/shared').GameState) {
+    if (!state.phase2) return;
+    this.config = getDifficultyConfig(state.level);
+    const p2 = state.phase2;
+    this.p2Path = {
+      centerLine: p2.pathPoints,
+      leftWall: p2.wallLeft,
+      rightWall: p2.wallRight,
+      totalLength: p2.wallLeft[p2.wallLeft.length - 1]?.y || 500,
+      pathWidth: p2.pathWidth,
+      dollBoxX: p2.dollBox.x + p2.dollBox.width / 2,
+    };
+    this.phase1Scene.hide();
+    this.phase2Scene.show();
+    this.phase2Scene.buildPath(this.p2Path, state.doll.type);
+
+    // Show countdown
+    this.phase = 'phase2_countdown';
+    this.p2Countdown = 3;
+    this.updateInfo();
+    const interval = setInterval(() => {
+      if (this.destroyed) { clearInterval(interval); return; }
+      this.p2Countdown--;
+      this.updateInfo();
+      if (this.p2Countdown <= 0) {
+        clearInterval(interval);
+        this.phase = 'phase2';
+        this.updateInfo();
+      }
+    }, 1000);
+  }
+
+  private async startRemoteSuspense(result: 'success' | 'fail') {
+    this.phase = 'suspense';
+    this.updateInfo();
+
+    const finalProbability = this.probabilityA * this.probabilityB;
+
+    await runSuspenseAnimation(
+      finalProbability,
+      (progress, phase) => {
+        this.suspenseProgress = progress;
+        this.suspensePhase = phase;
+        this.updateInfo();
+      },
+    );
+
+    // Force the known result (server already decided)
+    this.phase = 'result' as any;
+    this.lastResult = result;
+    this.updateInfo();
+  }
+
   /** Handle direction input from touch controls (local mode) */
   handleDirection(dir: 'up' | 'down' | 'left' | 'right') {
     if (this.destroyed || this.remoteMode) return;
@@ -637,35 +690,57 @@ export class GameEngine {
       this.dollPos = { ...state.doll.position };
       this.phase1Scene.setClaw(this.clawPos);
       this.updatePhase1Camera();
+      // Clear overlap/result from previous level
+      this.lastOverlap = 0;
+      this.lastResult = null;
+      this.suspenseProgress = 0;
+      this.suspensePhase = '';
       this.phase = 'phase1';
     }
 
     // Phase 2 rendering from server state
     if (state.phase === 'phase2' && state.phase2) {
-      if (this.phase !== 'phase2') {
-        this.config = getDifficultyConfig(state.level);
-        const p2 = state.phase2;
-        this.p2Path = {
-          centerLine: p2.pathPoints,
-          leftWall: p2.wallLeft,
-          rightWall: p2.wallRight,
-          totalLength: p2.wallLeft[p2.wallLeft.length - 1]?.y || 500,
-          pathWidth: p2.pathWidth,
-          dollBoxX: p2.dollBox.x + p2.dollBox.width / 2,
-        };
-        this.phase1Scene.hide();
-        this.phase2Scene.show();
-        this.phase2Scene.buildPath(this.p2Path, state.doll.type);
+      // Show Phase 1 completion overlay before jumping to Phase 2
+      if (this.phase === 'phase1' && this.probabilityA > 0) {
+        this.phase = 'phase1_to_phase2';
+        this.updateInfo();
+        // Delay Phase 2 setup
+        setTimeout(() => {
+          if (this.destroyed) return;
+          this.setupPhase2FromState(state);
+        }, 2500);
+        return;
       }
-      this.p2ClawX = state.phase2.clawX;
-      this.p2ClawY = state.phase2.clawY;
-      this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
-      this.updatePhase2Camera();
-      this.phase = 'phase2';
+
+      if (this.phase !== 'phase2' && this.phase !== 'phase1_to_phase2' && this.phase !== 'phase2_countdown') {
+        this.setupPhase2FromState(state);
+      }
+
+      if (this.phase === 'phase2') {
+        this.p2ClawX = state.phase2.clawX;
+        this.p2ClawY = state.phase2.clawY;
+        this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
+        this.updatePhase2Camera();
+      }
     }
 
-    if (state.phase === 'result') {
-      this.phase = 'result' as any;
+    // Result: show suspense sequence before revealing
+    if (state.phase === 'result' && state.lastResult) {
+      if (this.phase === 'phase2' && this.probabilityA > 0 && this.probabilityB > 0) {
+        // Show Phase 2 completion, then suspense
+        this.phase = 'phase2_to_suspense';
+        this.lastOverlap = Math.round(this.probabilityB * 100);
+        this.updateInfo();
+        setTimeout(() => {
+          if (this.destroyed) return;
+          this.startRemoteSuspense(state.lastResult as 'success' | 'fail');
+        }, 2500);
+        return;
+      }
+      if (this.phase !== 'suspense' && this.phase !== 'phase2_to_suspense') {
+        this.lastResult = state.lastResult;
+        this.phase = 'result' as any;
+      }
     }
 
     this.updateInfo();

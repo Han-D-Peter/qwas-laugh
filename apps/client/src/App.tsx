@@ -307,6 +307,22 @@ export function App() {
   const myPlayer = players.find(p => p.id === myPlayerId);
   const myDirections: AnyDirection[] = myPlayer?.assignedDirections || (myPlayer ? [myPlayer.assignedDirection] : []);
 
+  // Phase 2: determine which directions this player controls
+  const myPhase2Directions: AnyDirection[] = (() => {
+    if (appMode !== 'multiplayer' || !myPlayerId) return [];
+    const p2Left = gameInfo.p2LeftPlayerId;
+    const p2Right = gameInfo.p2RightPlayerId;
+    const dirs: AnyDirection[] = [];
+    if (p2Left === myPlayerId) dirs.push('left');
+    if (p2Right === myPlayerId) dirs.push('right');
+    return dirs;
+  })();
+
+  const isPhase2 = gameInfo.phase === 'phase2' || gameInfo.phase === 'phase2_countdown' || gameInfo.phase === 'phase2_to_suspense';
+  const touchDirections = appMode === 'multiplayer'
+    ? (isPhase2 ? myPhase2Directions : myDirections)
+    : [];
+
   const handleTouchDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     if (appMode === 'local') {
       engineRef.current?.handleDirection(dir);
@@ -388,7 +404,7 @@ export function App() {
       {/* Touch controls for mobile */}
       {isTouchDevice && (
         <TouchControls
-          myDirections={appMode === 'multiplayer' ? myDirections : []}
+          myDirections={touchDirections}
           onDirection={handleTouchDirection}
           onGrab={handleTouchGrab}
           phase={gameInfo.phase}
