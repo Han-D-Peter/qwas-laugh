@@ -35,10 +35,15 @@ export function setupSocketHandlers(io: Server) {
 
       // Check if rejoining completes the party and should resume
       if (rejoined) {
+        console.log(`[room] Player ${playerName} (${socket.id}) rejoined room ${room.code}. Checking resume...`);
         const resumePhase = roomManager.checkResume(room.code);
         if (resumePhase) {
+          console.log(`[room] Resuming room ${room.code} to phase: ${resumePhase}`);
           io.to(room.code).emit('game:resumed', { phase: resumePhase });
           gameLoop.resumeGame(room.code);
+        } else {
+          console.log(`[room] Room ${room.code} not ready to resume. Players:`,
+            room.players.map(p => `${p.name}(${p.connected ? 'on' : 'off'})`).join(', '));
         }
       }
 

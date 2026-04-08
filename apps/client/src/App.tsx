@@ -126,6 +126,7 @@ export function App() {
     });
 
     gs.onState((state: GameState) => {
+      // 1. Update React UI state
       setPlayers([...state.players]);
       const names = new Map<string, string>();
       for (const p of state.players) {
@@ -135,10 +136,10 @@ export function App() {
 
       if (state.phase === 'paused') {
         setAppMode('multiplayer');
-        // Keep pause overlay visible
       } else if (state.phase !== 'lobby') {
         setAppMode('multiplayer');
         setPauseMessage(null);
+        setConnectionLost(false);
         setGameInfo(prev => ({
           ...prev,
           level: state.level,
@@ -150,6 +151,9 @@ export function App() {
           probabilityB: Math.round(state.probabilityB * 100),
         }));
       }
+
+      // 2. Pipe to engine for rendering (if engine exists)
+      engineRef.current?.applyServerState(state);
     });
 
     // Listen for pause/resume events
@@ -249,11 +253,7 @@ export function App() {
     });
     engine.setRemoteMode();
     engineRef.current = engine;
-
-    // Pipe server state into engine for rendering
-    socketRef.current?.onState((state) => {
-      engine.applyServerState(state);
-    });
+    // Engine will receive state via the single onState callback in initSocket
 
     return () => {
       mountedRef.current = false;
