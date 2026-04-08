@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import type { AnyDirection } from '@qwas/shared';
 
 interface TouchControlsProps {
@@ -23,12 +23,39 @@ const DIR_LABELS: Record<string, string> = {
   'up-left': '좌상', 'up-right': '우상', 'down-left': '좌하', 'down-right': '우하',
 };
 
+/**
+ * Hook to prevent double-fire from onTouchStart + onClick on mobile.
+ * After a touch event, ignores click events for 500ms.
+ */
+function useTouchSafe(handler: () => void) {
+  const lastTouchRef = useRef(0);
+
+  const onTouch = useCallback(() => {
+    lastTouchRef.current = Date.now();
+    handler();
+  }, [handler]);
+
+  const onClick = useCallback(() => {
+    // Ignore click if it was preceded by a touch within 500ms
+    if (Date.now() - lastTouchRef.current < 500) return;
+    handler();
+  }, [handler]);
+
+  return { onTouchStart: onTouch, onClick };
+}
+
 export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost }: TouchControlsProps) {
   const press = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     onDirection(dir);
   }, [onDirection]);
 
   const isPhase2 = phase === 'phase2';
+
+  const grabSafe = useTouchSafe(onGrab);
+  const upSafe = useTouchSafe(() => press('up'));
+  const downSafe = useTouchSafe(() => press('down'));
+  const leftSafe = useTouchSafe(() => press('left'));
+  const rightSafe = useTouchSafe(() => press('right'));
 
   return (
     <div style={containerStyle}>
@@ -39,7 +66,7 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
           <DirButton
             dir="up"
             myDirs={myDirections}
-            onPress={() => press('up')}
+            touchHandlers={upSafe}
             style={{ gridArea: 'up' }}
           />
         )}
@@ -47,14 +74,14 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
         <DirButton
           dir="left"
           myDirs={myDirections}
-          onPress={() => press('left')}
+          touchHandlers={leftSafe}
           style={{ gridArea: 'left' }}
         />
         {/* Grab button (center) — host only */}
         {isHost ? (
           <button
-            onTouchStart={() => onGrab()}
-            onClick={onGrab}
+            onTouchStart={grabSafe.onTouchStart}
+            onClick={grabSafe.onClick}
             style={grabBtnStyle}
           >
             집기
@@ -76,7 +103,7 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
         <DirButton
           dir="right"
           myDirs={myDirections}
-          onPress={() => press('right')}
+          touchHandlers={rightSafe}
           style={{ gridArea: 'right' }}
         />
         {/* Down */}
@@ -84,7 +111,7 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
           <DirButton
             dir="down"
             myDirs={myDirections}
-            onPress={() => press('down')}
+            touchHandlers={downSafe}
             style={{ gridArea: 'down' }}
           />
         )}
@@ -93,10 +120,10 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
   );
 }
 
-function DirButton({ dir, myDirs, onPress, style }: {
+function DirButton({ dir, myDirs, touchHandlers, style }: {
   dir: 'up' | 'down' | 'left' | 'right';
   myDirs: AnyDirection[];
-  onPress: () => void;
+  touchHandlers: { onTouchStart: () => void; onClick: () => void };
   style: React.CSSProperties;
 }) {
   const isMine = myDirs.length === 0 || myDirs.includes(dir);
@@ -106,8 +133,8 @@ function DirButton({ dir, myDirs, onPress, style }: {
 
   return (
     <button
-      onTouchStart={() => onPress()}
-      onClick={onPress}
+      onTouchStart={touchHandlers.onTouchStart}
+      onClick={touchHandlers.onClick}
       style={{
         ...dirBtnBase,
         ...style,
