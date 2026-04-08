@@ -28,10 +28,15 @@ export function setupSocketHandlers(io: Server) {
         socket.emit('room:error', { message: result.error });
         return;
       }
-      const { room, playerId, rejoined } = result;
+      const { room, playerId, rejoined, oldPlayerId } = result;
       socket.join(room.code);
       socket.emit('room:joined', { playerId, code: room.code, state: room.gameState });
       socket.to(room.code).emit('room:player-joined', { playerName, playerId });
+
+      // Update game loop player IDs after reconnection
+      if (rejoined && oldPlayerId) {
+        gameLoop.updatePlayerId(room.code, oldPlayerId, playerId);
+      }
 
       // Check if rejoining completes the party and should resume
       if (rejoined) {

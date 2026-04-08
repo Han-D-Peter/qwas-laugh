@@ -92,7 +92,7 @@ export class RoomManager {
     return { room, playerId: hostSocketId };
   }
 
-  joinRoom(code: string, socketId: string, playerName: string): { room: Room; playerId: string; rejoined: boolean } | { error: string } {
+  joinRoom(code: string, socketId: string, playerName: string): { room: Room; playerId: string; rejoined: boolean; oldPlayerId?: string } | { error: string } {
     const room = this.rooms.get(code);
     if (!room) return { error: '방을 찾을 수 없습니다.' };
 
@@ -114,7 +114,7 @@ export class RoomManager {
 
       room.gameState.players = [...room.players];
       room.lastActivity = Date.now();
-      return { room, playerId: socketId, rejoined: true };
+      return { room, playerId: socketId, rejoined: true, oldPlayerId: oldId };
     }
 
     // Normal join (lobby only)

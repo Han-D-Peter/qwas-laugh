@@ -150,6 +150,14 @@ export class GameLoopManager {
     }
   }
 
+  /** Update player IDs after reconnection (socket ID changes) */
+  updatePlayerId(roomCode: string, oldId: string, newId: string) {
+    const game = this.games.get(roomCode);
+    if (!game) return;
+    if (game.p2LeftPlayerId === oldId) game.p2LeftPlayerId = newId;
+    if (game.p2RightPlayerId === oldId) game.p2RightPlayerId = newId;
+  }
+
   handleInput(roomCode: string, playerId: string, direction: AnyDirection) {
     const game = this.games.get(roomCode);
     if (!game) return;
@@ -172,11 +180,11 @@ export class GameLoopManager {
     const game = this.games.get(roomCode);
     if (!game || game.room.gameState.phase !== 'phase2') return;
 
-    // Only assigned players can control Phase 2
-    if (dir === 'left' && playerId !== game.p2LeftPlayerId) return;
-    if (dir === 'right' && playerId !== game.p2RightPlayerId) return;
+    // Only the 2 selected players can control Phase 2
+    const isAssigned = playerId === game.p2LeftPlayerId || playerId === game.p2RightPlayerId;
+    if (!isAssigned) return;
 
-    game.p2InputQueue.set(playerId, dir);
+    game.p2InputQueue.set(playerId + ':' + dir, dir);
   }
 
   handleGrab(roomCode: string, playerId: string) {
