@@ -12,9 +12,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 3, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
-    phase2PathLength: 500, phase2PathWidth: 120,
-    phase2DriftAmplitude: 1, phase2DriftFrequency: 0.5,
-    phase2Segments: 3,
+    phase2PathLength: 600, phase2PathWidth: 110,
+    phase2DriftAmplitude: 1.2, phase2DriftFrequency: 0.6,
+    phase2Segments: 4,
   },
   // Tier 2: Levels 5-8
   {
@@ -22,9 +22,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 5, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
-    phase2PathLength: 650, phase2PathWidth: 105,
-    phase2DriftAmplitude: 1.5, phase2DriftFrequency: 0.7,
-    phase2Segments: 4,
+    phase2PathLength: 800, phase2PathWidth: 95,
+    phase2DriftAmplitude: 1.8, phase2DriftFrequency: 0.8,
+    phase2Segments: 5,
   },
   // Tier 3: Levels 9-12
   {
@@ -32,9 +32,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 7, dollOutsideMaze: false,
     irregularBorders: false, irregularComplexity: 0,
     diagonalPlayerCount: 0,
-    phase2PathLength: 800, phase2PathWidth: 90,
-    phase2DriftAmplitude: 2, phase2DriftFrequency: 1.0,
-    phase2Segments: 5,
+    phase2PathLength: 1000, phase2PathWidth: 82,
+    phase2DriftAmplitude: 2.3, phase2DriftFrequency: 1.1,
+    phase2Segments: 6,
   },
   // Tier 4: Levels 13-16
   {
@@ -42,9 +42,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 10, dollOutsideMaze: false,
     irregularBorders: true, irregularComplexity: 1,
     diagonalPlayerCount: 2,
-    phase2PathLength: 1000, phase2PathWidth: 75,
-    phase2DriftAmplitude: 2.5, phase2DriftFrequency: 1.3,
-    phase2Segments: 7,
+    phase2PathLength: 1200, phase2PathWidth: 68,
+    phase2DriftAmplitude: 2.8, phase2DriftFrequency: 1.4,
+    phase2Segments: 8,
   },
   // Tier 5: Levels 17-20
   {
@@ -52,9 +52,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 12, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 1,
     diagonalPlayerCount: 2,
-    phase2PathLength: 1200, phase2PathWidth: 60,
-    phase2DriftAmplitude: 3, phase2DriftFrequency: 1.5,
-    phase2Segments: 9,
+    phase2PathLength: 1500, phase2PathWidth: 55,
+    phase2DriftAmplitude: 3.3, phase2DriftFrequency: 1.7,
+    phase2Segments: 10,
   },
   // Tier 6: Levels 21-24
   {
@@ -62,9 +62,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 15, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
-    phase2PathLength: 1500, phase2PathWidth: 50,
-    phase2DriftAmplitude: 4, phase2DriftFrequency: 2.0,
-    phase2Segments: 11,
+    phase2PathLength: 1800, phase2PathWidth: 45,
+    phase2DriftAmplitude: 4.2, phase2DriftFrequency: 2.1,
+    phase2Segments: 12,
   },
   // Tier 7: Levels 25-28
   {
@@ -72,9 +72,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 18, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
-    phase2PathLength: 1800, phase2PathWidth: 42,
-    phase2DriftAmplitude: 4.5, phase2DriftFrequency: 2.3,
-    phase2Segments: 13,
+    phase2PathLength: 2100, phase2PathWidth: 38,
+    phase2DriftAmplitude: 4.8, phase2DriftFrequency: 2.4,
+    phase2Segments: 14,
   },
   // Tier 8: Levels 29-30
   {
@@ -82,9 +82,9 @@ const TIER_ANCHORS: Omit<DifficultyConfig, 'level'>[] = [
     dollMinDistance: 20, dollOutsideMaze: true,
     irregularBorders: true, irregularComplexity: 2,
     diagonalPlayerCount: 4,
-    phase2PathLength: 2000, phase2PathWidth: 36,
-    phase2DriftAmplitude: 5, phase2DriftFrequency: 2.5,
-    phase2Segments: 15,
+    phase2PathLength: 2400, phase2PathWidth: 32,
+    phase2DriftAmplitude: 5.5, phase2DriftFrequency: 2.7,
+    phase2Segments: 16,
   },
 ];
 

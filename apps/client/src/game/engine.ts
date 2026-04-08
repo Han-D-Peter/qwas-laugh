@@ -267,7 +267,7 @@ export class GameEngine {
 
     this.p2ClawX = this.p2Path.centerLine[0].x;
     this.p2ClawY = 0;
-    this.p2DescentSpeed = 1.2 + this.level * 0.05;
+    this.p2DescentSpeed = 1.8 + this.level * 0.08;
     this.p2DriftOffset = 0;
     this.p2DriftTime = 0;
 

@@ -112,7 +112,7 @@ export class GameLoopManager {
       p2Path: null,
       p2ClawX: 200,
       p2ClawY: 0,
-      p2DescentSpeed: 1.2 + room.gameState.level * 0.05,
+      p2DescentSpeed: 1.8 + room.gameState.level * 0.08,
       p2DriftTime: 0,
       p2Countdown: 0,
       probabilityA: 0,
@@ -394,7 +394,7 @@ export class GameLoopManager {
 
     game.p2ClawX = game.p2Path.centerLine[0].x;
     game.p2ClawY = 0;
-    game.p2DescentSpeed = 1.2 + game.room.gameState.level * 0.05;
+    game.p2DescentSpeed = 1.8 + game.room.gameState.level * 0.08;
     game.p2DriftTime = 0;
     game.p2LeftPlayerId = p2Players[0]?.id || null;
     game.p2RightPlayerId = p2Players[1]?.id || null;
