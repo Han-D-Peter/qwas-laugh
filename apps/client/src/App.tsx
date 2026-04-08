@@ -71,6 +71,39 @@ export function App() {
     };
   }, [appMode]);
 
+  // ─── Auto-join for devtest mode ──────────────────────────────
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const devtest = params.get('devtest');
+    const room = params.get('room');
+    const name = params.get('name');
+    const isHostParam = params.get('host') === '1';
+
+    if (!devtest || !room || !name) return;
+
+    // Small stagger so players don't all connect at the exact same time
+    const delay = isHostParam ? 200 : 500 + Math.random() * 500;
+    const timer = setTimeout(() => {
+      const gs = initSocket();
+      const tryJoin = () => {
+        if (gs.connected) {
+          if (isHostParam) {
+            gs.createRoom(name);
+          } else {
+            gs.joinRoom(room, name);
+          }
+        } else {
+          setTimeout(tryJoin, 300);
+        }
+      };
+      tryJoin();
+    }, delay);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ─── Multiplayer Connection ─────────────────────────────────
 
   const initSocket = useCallback(() => {
