@@ -53,8 +53,8 @@ export function TouchControls({ myDirections, onDirection, onGrab, phase, isHost
         {/* Grab button (center) — host only */}
         {isHost ? (
           <button
-            onTouchStart={(e) => { e.preventDefault(); onGrab(); }}
-            onMouseDown={onGrab}
+            onTouchStart={() => onGrab()}
+            onClick={onGrab}
             style={grabBtnStyle}
           >
             집기
@@ -106,8 +106,8 @@ function DirButton({ dir, myDirs, onPress, style }: {
 
   return (
     <button
-      onTouchStart={(e) => { e.preventDefault(); onPress(); }}
-      onMouseDown={onPress}
+      onTouchStart={() => onPress()}
+      onClick={onPress}
       style={{
         ...dirBtnBase,
         ...style,
