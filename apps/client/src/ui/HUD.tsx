@@ -40,10 +40,12 @@ export function HUD({
   const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
-    if (lastResult && (phase === 'result' || phase === 'phase1')) {
+    if (lastResult && phase === 'result') {
       setShowResult(true);
-      const t = setTimeout(() => setShowResult(false), 2500);
+      const t = setTimeout(() => setShowResult(false), 3000);
       return () => clearTimeout(t);
+    } else {
+      setShowResult(false);
     }
   }, [lastResult, phase]);
 
