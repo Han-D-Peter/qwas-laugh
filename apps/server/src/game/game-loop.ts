@@ -180,11 +180,11 @@ export class GameLoopManager {
     const game = this.games.get(roomCode);
     if (!game || game.room.gameState.phase !== 'phase2') return;
 
-    // Only the 2 selected players can control Phase 2
-    const isAssigned = playerId === game.p2LeftPlayerId || playerId === game.p2RightPlayerId;
-    if (!isAssigned) return;
+    // Each assigned player controls their direction only
+    if (dir === 'left' && playerId !== game.p2LeftPlayerId) return;
+    if (dir === 'right' && playerId !== game.p2RightPlayerId) return;
 
-    game.p2InputQueue.set(playerId + ':' + dir, dir);
+    game.p2InputQueue.set(dir, dir);
   }
 
   handleGrab(roomCode: string, playerId: string) {
@@ -416,6 +416,11 @@ export class GameLoopManager {
     game.p2DriftTime = 0;
     game.p2LeftPlayerId = p2Players[0]?.id || null;
     game.p2RightPlayerId = p2Players[1]?.id || null;
+
+    console.log('[phase2] Assigned controls:',
+      'LEFT=' + (p2Players[0]?.name || 'none') + '(' + game.p2LeftPlayerId + ')',
+      'RIGHT=' + (p2Players[1]?.name || 'none') + '(' + game.p2RightPlayerId + ')',
+      'inputCounts=' + game.room.players.map(p => p.name + ':' + p.inputCount).join(','));
 
     game.room.gameState.phase = 'phase2';
     game.room.gameState.phase2 = {
