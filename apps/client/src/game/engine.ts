@@ -544,6 +544,34 @@ export class GameEngine {
     });
   }
 
+  /** Handle direction input from touch controls (local mode) */
+  handleDirection(dir: 'up' | 'down' | 'left' | 'right') {
+    if (this.destroyed || this.remoteMode) return;
+
+    if (this.phase === 'phase1') {
+      const d = 0.707;
+      const diag = this.config?.diagonalPlayerCount >= 4;
+      const dirMap: Record<string, { x: number; y: number }> = diag
+        ? { up: { x: -d, y: -d }, down: { x: d, y: d }, left: { x: -d, y: d }, right: { x: d, y: -d } }
+        : { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+      this.clawDir = dirMap[dir];
+    } else if (this.phase === 'phase2') {
+      if (dir === 'left') this.p2ClawX -= 6;
+      if (dir === 'right') this.p2ClawX += 6;
+    }
+  }
+
+  /** Handle grab input from touch controls (local mode) */
+  handleGrab() {
+    if (this.destroyed || this.remoteMode) return;
+
+    if (this.phase === 'phase1') {
+      this.attemptPhase1Grab();
+    } else if (this.phase === 'phase2') {
+      this.attemptPhase2Grab();
+    }
+  }
+
   /**
    * Switch to remote mode — disables local simulation and input.
    * Call this before applyServerState for multiplayer.

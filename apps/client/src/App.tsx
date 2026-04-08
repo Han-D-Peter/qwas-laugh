@@ -276,9 +276,7 @@ export function App() {
 
   const handleTouchDirection = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     if (appMode === 'local') {
-      // Simulate keyboard for local engine
-      const keyMap: Record<string, string> = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: keyMap[dir] }));
+      engineRef.current?.handleDirection(dir);
     } else if (appMode === 'multiplayer') {
       socketRef.current?.sendInput(dir);
     }
@@ -286,7 +284,7 @@ export function App() {
 
   const handleTouchGrab = useCallback(() => {
     if (appMode === 'local') {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+      engineRef.current?.handleGrab();
     } else if (appMode === 'multiplayer') {
       socketRef.current?.sendGrab();
     }
