@@ -634,6 +634,7 @@ export class GameEngine {
         this.obstacleManager.spawn(state.level, state.maze, state.maze.seed);
       }
       this.clawPos = { ...state.claw.position };
+      this.dollPos = { ...state.doll.position };
       this.phase1Scene.setClaw(this.clawPos);
       this.updatePhase1Camera();
       this.phase = 'phase1';

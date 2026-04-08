@@ -72,6 +72,9 @@ export class GameLoopManager {
     const dollPos = placeDoll(maze, config.dollMinDistance, seed);
 
     room.gameState.phase = 'phase1';
+    room.gameState.lastResult = null;
+    room.gameState.probabilityA = 0;
+    room.gameState.probabilityB = 0;
     room.gameState.maze = maze;
     room.gameState.claw = {
       position: { x: centerX, y: centerY },
@@ -423,6 +426,7 @@ export class GameLoopManager {
       'inputCounts=' + game.room.players.map(p => p.name + ':' + p.inputCount).join(','));
 
     game.room.gameState.phase = 'phase2';
+    game.room.gameState.lastResult = null;
     game.room.gameState.phase2 = {
       pathPoints: game.p2Path.centerLine,
       wallLeft: game.p2Path.leftWall,
