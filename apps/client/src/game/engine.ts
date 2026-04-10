@@ -95,6 +95,14 @@ export class GameEngine {
    * the top of the descent path, causing an instant fail.
    */
   private phase1GrabCommitted = false;
+  /**
+   * Timestamp (ms since epoch) until which applyServerState should refuse
+   * to tear down the result-popup phase in remote mode. Set when the
+   * remote suspense sequence resolves into a 'result' state, so the user
+   * gets the full JACKPOT!! / MISS!! popup display window before the
+   * server's next phase1 state update rebuilds the scene.
+   */
+  private resultLockUntil = 0;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
   /**
    * When true, the engine only renders server state (no local simulation or input).
@@ -930,6 +938,9 @@ export class GameEngine {
     // Force the known result (server already decided)
     this.phase = 'result' as any;
     this.lastResult = result;
+    // Keep applyServerState out of the scene for the full popup window
+    // (3.5s — same as the HUD's showResult timer).
+    this.resultLockUntil = Date.now() + 3500;
     this.updateInfo();
 
     if (result === 'success') {
@@ -1019,11 +1030,45 @@ export class GameEngine {
 
     this.level = state.level;
     this.coins = state.coins;
-    this.lastResult = state.lastResult;
 
     // Sync probabilities from server
     if (state.probabilityA > 0) this.probabilityA = state.probabilityA;
     if (state.probabilityB > 0) this.probabilityB = state.probabilityB;
+
+    // ─── Race guard for in-progress client-side transitions ─────────
+    //
+    // The phase1→phase2 transition, phase2→suspense transition, and the
+    // suspense sequence itself are all driven by client-side setTimeout
+    // chains scheduled from earlier state updates. If the server races
+    // ahead and broadcasts the next state (e.g. phase='phase1' for the
+    // next level) BEFORE our scheduled setTimeout fires, a naive
+    // applyServerState will rebuild the phase1 scene and tear down the
+    // scheduled transition mid-flight. The user then sees:
+    //   phase2 grab → phase1 scene → (2500ms later) suspense shake →
+    //   result fx → phase1 again ("그냥 다시 시작")
+    //
+    // While we're in one of these client-locked transitional phases, we
+    // accept non-scene state (level, coins, maze cache for next build)
+    // but we DO NOT touch scene visibility, camera, or this.phase. When
+    // the local transition completes, the next applyServerState call
+    // picks up where we left off with the freshly-cached state.
+    const inScheduledTransition =
+      this.phase === 'phase1_to_phase2' ||
+      this.phase === 'phase2_to_suspense' ||
+      this.phase === 'suspense' ||
+      (this.phase === 'result' && Date.now() < this.resultLockUntil);
+
+    if (inScheduledTransition) {
+      // Cache the maze for the next scene build, but do not swap scenes.
+      if (state.phase === 'phase1' && state.maze) {
+        this.maze = state.maze;
+      }
+      this.updateInfo();
+      return;
+    }
+
+    // Outside of scheduled transitions, lastResult mirrors the server.
+    this.lastResult = state.lastResult;
 
     // Phase 1 rendering from server state
     if (state.phase === 'phase1' && state.maze) {
@@ -1098,6 +1143,8 @@ export class GameEngine {
       if (this.phase !== 'suspense' && this.phase !== 'phase2_to_suspense') {
         this.lastResult = state.lastResult;
         this.phase = 'result' as any;
+        // Hold the result popup long enough for the user to read it.
+        this.resultLockUntil = Date.now() + 3500;
       }
     }
 
