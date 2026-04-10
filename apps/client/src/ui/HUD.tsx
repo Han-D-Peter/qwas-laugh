@@ -485,46 +485,59 @@ export function HUD({
               ))}
             </div>
           )}
+          {/*
+            Outer wrapper owns the centering transform. The inner box owns the
+            entry/idle animations (bounce-in / drop-in / glitch). Splitting
+            these two responsibilities is required because `glitch`'s keyframes
+            use `transform: translate(...)` relative to the inner's origin —
+            if we put them on the centered element, the animation overwrites
+            `translate(-50%, -50%)` and the popup visually jumps to the
+            bottom-right. See user report 2026-04-10.
+          */}
           <div style={{
             position: 'absolute',
             top: '50%', left: '50%',
             transform: 'translate(-50%, -50%)',
-            padding: '32px 52px',
-            borderRadius: 6,
-            background: 'rgba(10,14,44,0.92)',
-            border: `3px solid ${lastResult === 'success' ? ARCADE.CSS_NEON_YELLOW : ARCADE.CSS_NEON_PINK}`,
-            boxShadow: lastResult === 'success'
-              ? `0 0 30px ${ARCADE.CSS_NEON_YELLOW}, 0 0 60px ${ARCADE.CSS_NEON_YELLOW}, inset 0 0 20px rgba(255,210,63,0.2)`
-              : `0 0 30px ${ARCADE.CSS_NEON_PINK}, 0 0 60px ${ARCADE.CSS_NEON_PINK}, inset 0 0 20px rgba(255,46,147,0.2)`,
-            color: '#fff',
-            textAlign: 'center',
-            animation: lastResult === 'success'
-              ? 'bounce-in 0.6s ease-out, neon-flicker 3s infinite 0.6s'
-              : 'drop-in 0.5s ease-out, glitch 0.15s ease-in-out infinite 0.5s',
             zIndex: 60,
-            minWidth: 280,
+            pointerEvents: 'none',
           }}>
             <div style={{
-              fontFamily: ARCADE.PIXEL_FONT,
-              fontSize: 42,
-              color: lastResult === 'success' ? ARCADE.CSS_NEON_YELLOW : ARCADE.CSS_NEON_PINK,
-              textShadow: lastResult === 'success' ? ARCADE.GLOW_YELLOW : ARCADE.GLOW_PINK,
-              letterSpacing: 3,
-              lineHeight: 1,
+              padding: '32px 52px',
+              borderRadius: 6,
+              background: 'rgba(10,14,44,0.92)',
+              border: `3px solid ${lastResult === 'success' ? ARCADE.CSS_NEON_YELLOW : ARCADE.CSS_NEON_PINK}`,
+              boxShadow: lastResult === 'success'
+                ? `0 0 30px ${ARCADE.CSS_NEON_YELLOW}, 0 0 60px ${ARCADE.CSS_NEON_YELLOW}, inset 0 0 20px rgba(255,210,63,0.2)`
+                : `0 0 30px ${ARCADE.CSS_NEON_PINK}, 0 0 60px ${ARCADE.CSS_NEON_PINK}, inset 0 0 20px rgba(255,46,147,0.2)`,
+              color: '#fff',
+              textAlign: 'center',
+              animation: lastResult === 'success'
+                ? 'popup-bounce-in 0.6s ease-out, neon-flicker 3s infinite 0.6s'
+                : 'popup-drop-in 0.5s ease-out, popup-glitch 0.15s ease-in-out infinite 0.5s',
+              minWidth: 280,
             }}>
-              {lastResult === 'success' ? 'JACKPOT!!' : 'MISS!!'}
-            </div>
-            <div style={{
-              fontSize: 10,
-              fontFamily: ARCADE.PIXEL_FONT,
-              marginTop: 14,
-              color: '#b0b0d0',
-              letterSpacing: 1,
-              lineHeight: 1.8,
-            }}>
-              {lastResult === 'success'
-                ? `YOU WON AT ${finalProb}% CHANCE!`
-                : `${finalProb}% CHANCE... SO CLOSE!`}
+              <div style={{
+                fontFamily: ARCADE.PIXEL_FONT,
+                fontSize: 42,
+                color: lastResult === 'success' ? ARCADE.CSS_NEON_YELLOW : ARCADE.CSS_NEON_PINK,
+                textShadow: lastResult === 'success' ? ARCADE.GLOW_YELLOW : ARCADE.GLOW_PINK,
+                letterSpacing: 3,
+                lineHeight: 1,
+              }}>
+                {lastResult === 'success' ? 'JACKPOT!!' : 'MISS!!'}
+              </div>
+              <div style={{
+                fontSize: 10,
+                fontFamily: ARCADE.PIXEL_FONT,
+                marginTop: 14,
+                color: '#b0b0d0',
+                letterSpacing: 1,
+                lineHeight: 1.8,
+              }}>
+                {lastResult === 'success'
+                  ? `YOU WON AT ${finalProb}% CHANCE!`
+                  : `${finalProb}% CHANCE... SO CLOSE!`}
+              </div>
             </div>
           </div>
         </div>
@@ -594,6 +607,27 @@ export function HUD({
         @keyframes rainbow-slide {
           0%   { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
+        }
+        /* Result-popup specific keyframes. These assume the element sits at
+           its natural inside-wrapper origin (0,0) — the outer wrapper
+           handles the top:50%/left:50%/translate(-50%,-50%) centering. */
+        @keyframes popup-bounce-in {
+          0%   { transform: scale(0) translateY(-100px); opacity: 0; }
+          50%  { transform: scale(1.3) translateY(20px); opacity: 1; }
+          70%  { transform: scale(0.9) translateY(-10px); }
+          100% { transform: scale(1) translateY(0); }
+        }
+        @keyframes popup-drop-in {
+          0%   { transform: translateY(-300px) rotate(-20deg); opacity: 0; }
+          60%  { transform: translateY(20px) rotate(5deg); opacity: 1; }
+          100% { transform: translateY(0) rotate(0); }
+        }
+        @keyframes popup-glitch {
+          0%, 100% { transform: translate(0, 0); }
+          20% { transform: translate(-2px, 2px); }
+          40% { transform: translate(2px, -1px); }
+          60% { transform: translate(-1px, -2px); }
+          80% { transform: translate(2px, 1px); }
         }
       `}</style>
     </>
