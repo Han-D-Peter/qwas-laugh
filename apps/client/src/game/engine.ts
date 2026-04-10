@@ -1112,9 +1112,24 @@ export class GameEngine {
     // starting and the previous result should clear.
     this.lastResult = state.lastResult;
 
-    // Phase 1 rendering from server state
+    // Phase 1 rendering from server state.
+    //
+    // IMPORTANT: a phase1 server broadcast must NOT tear down a client-side
+    // transition that's already past phase1. The original `isNewLevel`
+    // formula was `this.phase !== 'phase1' || !this.maze || seed-changed`,
+    // which fired whenever the client was in any non-phase1 state — that
+    // includes phase2_countdown, the post-race-guard window after a
+    // successful Phase 1 grab. A stray phase1 broadcast (e.g., from a
+    // server tick that lagged behind the actual phase change) would
+    // rebuild the phase1 scene and yank the user back. The user-reported
+    // symptom: "Phase 2로 넘어가야 할 때 화면이 멈춤/꼬임/무반응".
+    //
+    // Fix: trust the maze seed as the "did the level change?" signal.
+    // Same seed = same level, no rebuild, no this.phase reset. This lets
+    // a stale-but-same-level phase1 broadcast pass through harmlessly,
+    // while a real new-level broadcast (different seed) still rebuilds.
     if (state.phase === 'phase1' && state.maze) {
-      const isNewLevel = this.phase !== 'phase1' || !this.maze || this.maze.seed !== state.maze.seed;
+      const isNewLevel = !this.maze || this.maze.seed !== state.maze.seed;
       if (isNewLevel) {
         this.maze = state.maze;
         this.config = getDifficultyConfig(state.level);
@@ -1130,17 +1145,25 @@ export class GameEngine {
         this.fx?.crtPowerOn(22).catch(() => {});
         if (this.fx) this.fx.cameraZoom(this.worldContainer, 1.3, 1.0, 36);
         this.triggerIntroSplash();
+        // Clear scoreboard state for the new level
+        this.lastOverlap = 0;
+        this.lastResult = null;
+        this.suspenseProgress = 0;
+        this.suspensePhase = '';
+        this.probabilityA = 0;
+        this.probabilityB = 0;
+        this.phase = 'phase1';
       }
-      this.clawPos = { ...state.claw.position };
-      this.dollPos = { ...state.doll.position };
-      this.phase1Scene.setClaw(this.clawPos);
-      this.updatePhase1Camera();
-      // Clear overlap/result from previous level
-      this.lastOverlap = 0;
-      this.lastResult = null;
-      this.suspenseProgress = 0;
-      this.suspensePhase = '';
-      this.phase = 'phase1';
+      // Always sync claw/doll position from server (even on same level).
+      // Safe even if the visible scene is phase2Scene — we're updating
+      // the hidden phase1Scene's sprites, which costs little and keeps
+      // the data current for when we come back.
+      if (this.phase === 'phase1') {
+        this.clawPos = { ...state.claw.position };
+        this.dollPos = { ...state.doll.position };
+        this.phase1Scene.setClaw(this.clawPos);
+        this.updatePhase1Camera();
+      }
     }
 
     // Phase 2 rendering from server state
