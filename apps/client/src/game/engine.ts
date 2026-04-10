@@ -96,6 +96,15 @@ export class GameEngine {
    */
   private phase1GrabCommitted = false;
   /**
+   * Epoch counter that test harnesses (or any caller that needs to "reset"
+   * the engine to a clean phase1) can bump via cancelPendingTransitions().
+   * Every setTimeout/setInterval that mutates this.phase captures the
+   * epoch at scheduling time and bails out if it no longer matches when
+   * the timer fires. This makes test isolation possible without having
+   * to track every individual timer handle.
+   */
+  private transitionEpoch = 0;
+  /**
    * Timestamp (ms since epoch) until which applyServerState should refuse
    * to tear down the result-popup phase in remote mode. Set when the
    * remote suspense sequence resolves into a 'result' state, so the user
@@ -215,14 +224,15 @@ export class GameEngine {
 
   private triggerIntroSplash() {
     if (this.introSplashTimer) clearTimeout(this.introSplashTimer);
+    const epoch = this.transitionEpoch;
     this.introSplashPhase = 'ready';
     this.updateInfo();
     this.introSplashTimer = setTimeout(() => {
-      if (this.destroyed) return;
+      if (this.destroyed || this.transitionEpoch !== epoch) return;
       this.introSplashPhase = 'go';
       this.updateInfo();
       this.introSplashTimer = setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== epoch) return;
         this.introSplashPhase = null;
         this.updateInfo();
       }, 500);
@@ -480,15 +490,16 @@ export class GameEngine {
     this.lastResult = null;
     this.updateInfo();
 
+    const epoch = this.transitionEpoch;
     // 0-1500ms: HUD shows the "PHASE 1 CLEAR!" overlay
     // 1500ms:   CRT power-off
     // 2000ms:   start Phase 2 (which immediately does power-on)
     setTimeout(() => {
-      if (this.destroyed) return;
+      if (this.destroyed || this.transitionEpoch !== epoch) return;
       this.fx?.crtPowerOff(20).catch(() => {});
     }, 1500);
     setTimeout(() => {
-      if (this.destroyed) return;
+      if (this.destroyed || this.transitionEpoch !== epoch) return;
       this.startPhase2();
     }, 2000);
   }
@@ -529,8 +540,9 @@ export class GameEngine {
     this.p2Countdown = 3;
     this.updateInfo();
 
+    const epoch = this.transitionEpoch;
     const countdownInterval = setInterval(() => {
-      if (this.destroyed) { clearInterval(countdownInterval); return; }
+      if (this.destroyed || this.transitionEpoch !== epoch) { clearInterval(countdownInterval); return; }
       this.p2Countdown--;
       this.updateInfo();
       // Flash + shake on each tick
@@ -592,8 +604,9 @@ export class GameEngine {
       this.coins++;
       this.phase = 'result';
       this.updateInfo();
+      const epochFail = this.transitionEpoch;
       setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== epochFail) return;
         this.setupLevel(this.level);
       }, 2000);
     } else {
@@ -601,12 +614,13 @@ export class GameEngine {
       // Show Phase 2 overlap result before suspense
       this.phase = 'phase2_to_suspense';
       this.updateInfo();
+      const epochOk = this.transitionEpoch;
       setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== epochOk) return;
         this.fx?.crtPowerOff(20).catch(() => {});
       }, 1500);
       setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== epochOk) return;
         this.startSuspense();
       }, 2000);
     }
@@ -635,12 +649,13 @@ export class GameEngine {
     );
 
     this.phase = 'result';
+    const susEpoch = this.transitionEpoch;
     if (success) {
       this.lastResult = 'success';
       this.updateInfo();
       this.playSuccessFX();
       setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== susEpoch) return;
         this.level = Math.min(30, this.level + 1);
         this.setupLevel(this.level);
       }, 2500);
@@ -650,7 +665,7 @@ export class GameEngine {
       this.updateInfo();
       this.playFailFX();
       setTimeout(() => {
-        if (this.destroyed) return;
+        if (this.destroyed || this.transitionEpoch !== susEpoch) return;
         this.setupLevel(this.level);
       }, 2000);
     }
@@ -892,8 +907,9 @@ export class GameEngine {
     this.phase = 'phase2_countdown';
     this.p2Countdown = 3;
     this.updateInfo();
+    const epoch = this.transitionEpoch;
     const interval = setInterval(() => {
-      if (this.destroyed) { clearInterval(interval); return; }
+      if (this.destroyed || this.transitionEpoch !== epoch) { clearInterval(interval); return; }
       this.p2Countdown--;
       this.updateInfo();
       // Per-tick flash + shake (mirror local startPhase2)
@@ -1172,9 +1188,10 @@ export class GameEngine {
       if (this.phase === 'phase1' && this.probabilityA > 0) {
         this.phase = 'phase1_to_phase2';
         this.updateInfo();
+        const p2Epoch = this.transitionEpoch;
         // Delay Phase 2 setup
         setTimeout(() => {
-          if (this.destroyed) return;
+          if (this.destroyed || this.transitionEpoch !== p2Epoch) return;
           this.setupPhase2FromState(state);
         }, 2500);
         return;
@@ -1199,8 +1216,9 @@ export class GameEngine {
         this.phase = 'phase2_to_suspense';
         this.lastOverlap = Math.round(this.probabilityB * 100);
         this.updateInfo();
+        const sEpoch = this.transitionEpoch;
         setTimeout(() => {
-          if (this.destroyed) return;
+          if (this.destroyed || this.transitionEpoch !== sEpoch) return;
           this.startRemoteSuspense(state.lastResult as 'success' | 'fail');
         }, 2500);
         return;
@@ -1220,6 +1238,23 @@ export class GameEngine {
     this.level = 1;
     this.coins = 0;
     this.setupLevel(this.level);
+  }
+
+  /**
+   * Invalidate any in-flight scheduled transitions. Each phase-mutating
+   * setTimeout/setInterval in the engine captures the current
+   * `transitionEpoch` at schedule time and bails out if it no longer
+   * matches when the callback fires. Bumping the epoch effectively
+   * cancels all pending phase changes without having to track timer
+   * handles individually. Used by the /test harness between tests.
+   */
+  cancelPendingTransitions() {
+    this.transitionEpoch++;
+    if (this.introSplashTimer) {
+      clearTimeout(this.introSplashTimer);
+      this.introSplashTimer = null;
+    }
+    this.introSplashPhase = null;
   }
 
   destroy() {
