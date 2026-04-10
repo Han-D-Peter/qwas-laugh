@@ -208,7 +208,8 @@ const cardStyle: React.CSSProperties = {
   border: `2px solid ${ARCADE.CSS_NEON_CYAN}`,
   borderRadius: 8,
   padding: '30px 28px',
-  boxShadow: ARCADE.BOX_GLOW_CYAN,
+  // Plan spec: cyan outer glow + pink secondary glow + inset cyan wash
+  boxShadow: '0 0 20px #00e5ff, 0 0 40px #ff2e93, inset 0 0 15px rgba(0,229,255,0.1)',
   backdropFilter: 'blur(4px)',
   textAlign: 'center',
   minWidth: 340,
@@ -220,10 +221,10 @@ const cardStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   fontFamily: ARCADE.PIXEL_FONT,
-  fontSize: 22,
+  fontSize: 32,
   color: '#fff',
-  margin: '0 0 6px',
-  letterSpacing: 3,
+  margin: '0 0 8px',
+  letterSpacing: 2,
   animation: 'title-pulse 2s ease-in-out infinite',
   textShadow: ARCADE.GLOW_PINK,
 };

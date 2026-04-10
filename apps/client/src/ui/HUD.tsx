@@ -46,7 +46,7 @@ export function HUD({
   useEffect(() => {
     if (lastResult && phase === 'result') {
       setShowResult(true);
-      const t = setTimeout(() => setShowResult(false), 3000);
+      const t = setTimeout(() => setShowResult(false), 3500);
       return () => clearTimeout(t);
     } else {
       setShowResult(false);
@@ -59,7 +59,7 @@ export function HUD({
 
   // CSS confetti pieces (generated once)
   const confettiPieces = useMemo(
-    () => Array.from({ length: 40 }, (_, i) => {
+    () => Array.from({ length: 50 }, (_, i) => {
       const colors = ['#ff2e93', '#00e5ff', '#ffd23f', '#4dff7c', '#b46cff'];
       return {
         id: i,
@@ -298,15 +298,52 @@ export function HUD({
               </div>
             </div>
 
-            <div style={{
-              fontFamily: ARCADE.PIXEL_FONT,
-              fontSize: p2Countdown > 0 ? 72 : 56,
-              color: p2Countdown > 0 ? ARCADE.CSS_NEON_CYAN : ARCADE.CSS_NEON_YELLOW,
-              textShadow: p2Countdown > 0 ? ARCADE.GLOW_CYAN : ARCADE.GLOW_YELLOW,
-              animation: 'bounce-in 0.5s ease-out, pulse 0.8s ease-in-out infinite',
-            }}>
-              {p2Countdown > 0 ? p2Countdown : 'GO!!'}
-            </div>
+            {p2Countdown > 0 ? (
+              (() => {
+                // Per-digit color cycle: 3 pink → 2 cyan → 1 yellow
+                const digitColor =
+                  p2Countdown === 3 ? ARCADE.CSS_NEON_PINK :
+                  p2Countdown === 2 ? ARCADE.CSS_NEON_CYAN :
+                  ARCADE.CSS_NEON_YELLOW;
+                const digitGlow =
+                  p2Countdown === 3 ? ARCADE.GLOW_PINK :
+                  p2Countdown === 2 ? ARCADE.GLOW_CYAN :
+                  ARCADE.GLOW_YELLOW;
+                return (
+                  <div
+                    key={p2Countdown}
+                    style={{
+                      fontFamily: ARCADE.PIXEL_FONT,
+                      fontSize: 96,
+                      color: digitColor,
+                      textShadow: digitGlow,
+                      animation: 'bounce-in 0.5s ease-out',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {p2Countdown}
+                  </div>
+                );
+              })()
+            ) : (
+              <div
+                style={{
+                  fontFamily: ARCADE.PIXEL_FONT,
+                  fontSize: 120,
+                  lineHeight: 1,
+                  background: 'linear-gradient(90deg, #ff2e93, #ffd23f, #4dff7c, #00e5ff, #b46cff, #ff2e93)',
+                  backgroundSize: '200% 100%',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  color: 'transparent',
+                  filter: 'drop-shadow(0 0 8px #ffd23f) drop-shadow(0 0 20px #ff2e93)',
+                  animation: 'stamp-in 0.4s ease-out, neon-flicker 0.8s infinite, rainbow-slide 1.5s linear infinite',
+                }}
+              >
+                GO!!
+              </div>
+            )}
           </div>
         );
       })()}
@@ -553,6 +590,10 @@ export function HUD({
           0%   { transform: translate(-50%, -200%) rotate(-20deg); opacity: 0; }
           60%  { transform: translate(-50%, calc(-50% + 20px)) rotate(5deg); opacity: 1; }
           100% { transform: translate(-50%, -50%) rotate(0); }
+        }
+        @keyframes rainbow-slide {
+          0%   { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
         }
       `}</style>
     </>

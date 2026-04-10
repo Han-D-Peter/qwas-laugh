@@ -853,6 +853,9 @@ export class GameEngine {
     this.phase2Scene.show();
     this.phase2Scene.buildPath(this.p2Path, state.doll.type);
 
+    // CRT power-on for Phase 2 (mirror local startPhase2)
+    this.fx?.crtPowerOn(22).catch(() => {});
+
     // Show countdown
     this.phase = 'phase2_countdown';
     this.p2Countdown = 3;
@@ -861,10 +864,23 @@ export class GameEngine {
       if (this.destroyed) { clearInterval(interval); return; }
       this.p2Countdown--;
       this.updateInfo();
+      // Per-tick flash + shake (mirror local startPhase2)
+      if (this.fx && this.particles) {
+        this.fx.screenShake(6, 2);
+        this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_CYAN, 4);
+      }
       if (this.p2Countdown <= 0) {
         clearInterval(interval);
         this.phase = 'phase2';
         this.updateInfo();
+        // GO! burst
+        if (this.fx && this.particles) {
+          this.fx.screenShake(14, 6);
+          this.fx.cameraZoom(this.worldContainer, 0.95, 1.0, 12);
+          this.particles.emitConfetti(this.p2ClawX, this.p2ClawY + 40, 30);
+          this.particles.emitStars(this.p2ClawX, this.p2ClawY + 40, 15);
+          this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_YELLOW, 6);
+        }
       }
     }, 1000);
   }
@@ -983,7 +999,8 @@ export class GameEngine {
 
     // Phase 1 rendering from server state
     if (state.phase === 'phase1' && state.maze) {
-      if (this.phase !== 'phase1' || !this.maze || this.maze.seed !== state.maze.seed) {
+      const isNewLevel = this.phase !== 'phase1' || !this.maze || this.maze.seed !== state.maze.seed;
+      if (isNewLevel) {
         this.maze = state.maze;
         this.config = getDifficultyConfig(state.level);
         this.phase1Scene.buildMaze(state.maze);
@@ -992,6 +1009,12 @@ export class GameEngine {
         this.phase1Scene.show();
         this.phase2Scene.hide();
         this.obstacleManager.spawn(state.level, state.maze, state.maze.seed);
+        // Mirror setupLevel's retro intro for multiplayer clients:
+        // CRT power-on, camera zoom, claw drop, and READY→GO splash.
+        this.phase1Scene.playIntro();
+        this.fx?.crtPowerOn(22).catch(() => {});
+        if (this.fx) this.fx.cameraZoom(this.worldContainer, 1.3, 1.0, 36);
+        this.triggerIntroSplash();
       }
       this.clawPos = { ...state.claw.position };
       this.dollPos = { ...state.doll.position };
