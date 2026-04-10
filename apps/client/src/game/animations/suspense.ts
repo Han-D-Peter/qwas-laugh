@@ -1,12 +1,17 @@
 export type SuspensePhase = 'showA' | 'showB' | 'calculating' | 'drumroll' | 'reveal';
 
 /**
- * Runs the full suspense animation sequence:
- * 1. Show probability A (1.5s)
- * 2. Show probability B (1.5s)
- * 3. Calculating A*B with dramatic build (2s)
- * 4. Drumroll / tension (2s)
- * 5. Reveal result (1s)
+ * Runs the suspense animation sequence after a successful Phase 1 grab.
+ *
+ * Phase 2 was removed from the game flow — final success/failure is decided
+ * solely by the Phase 1 overlap probability. The suspense sequence is now:
+ *   1. Show probability A      (1.5s)
+ *   2. Calculating               (1.6s)
+ *   3. Drumroll / tension       (2s)
+ *   4. Reveal result             (1s)
+ *
+ * The 'showB' phase identifier is kept in the union type for backwards
+ * compatibility with existing HUD render branches but is never emitted.
  */
 export function runSuspenseAnimation(
   probability: number,
@@ -15,8 +20,7 @@ export function runSuspenseAnimation(
   return new Promise((resolve) => {
     const phases: { phase: SuspensePhase; duration: number }[] = [
       { phase: 'showA', duration: 1500 },
-      { phase: 'showB', duration: 1500 },
-      { phase: 'calculating', duration: 2000 },
+      { phase: 'calculating', duration: 1600 },
       { phase: 'drumroll', duration: 2000 },
       { phase: 'reveal', duration: 1000 },
     ];

@@ -335,12 +335,15 @@ export class GameEngine {
       this.lastResult = 'fail';
       this.resetPhase1();
     } else {
+      // Phase 2 was removed from the game flow. A successful Phase 1 grab
+      // (overlap ≥ threshold) now jumps straight to the suspense sequence,
+      // which decides final success/fail using ONLY probabilityA. We set
+      // probabilityB = 1.0 so the existing `probA * probB` math in
+      // startSuspense / runSuspenseAnimation produces the correct value.
       this.probabilityA = overlap;
-      // Lock out any further user-initiated grabs until the next level.
-      // A second rapid press would otherwise land on the Phase 2 manual
-      // grab handler as soon as the countdown finishes.
+      this.probabilityB = 1.0;
       this.phase1GrabCommitted = true;
-      this.transitionToPhase2();
+      this.transitionToSuspense();
     }
     this.updateInfo();
   }
@@ -485,23 +488,39 @@ export class GameEngine {
 
   // ─── Phase 1 → Phase 2 Transition ─────────────────────────────
 
-  private transitionToPhase2() {
+  /**
+   * Local-mode transition after a successful Phase 1 grab.
+   *
+   * Phase 2 was removed from the flow — instead of building a descent path
+   * and running a countdown, we show a brief "PHASE 1 CLEAR!" overlay and
+   * then drop directly into the suspense sequence. The suspense uses
+   * probabilityA as the final probability (probabilityB is set to 1.0 by
+   * the caller so the existing `probA * probB` math still works).
+   */
+  private transitionToSuspense() {
     this.phase = 'phase1_to_phase2';
     this.lastResult = null;
     this.updateInfo();
 
     const epoch = this.transitionEpoch;
-    // 0-1500ms: HUD shows the "PHASE 1 CLEAR!" overlay
-    // 1500ms:   CRT power-off
-    // 2000ms:   start Phase 2 (which immediately does power-on)
+    // 0-1200ms: HUD shows the "PHASE 1 CLEAR!" overlay with probability A
+    // 1200ms:   CRT power-off (gives the suspense its arcade feel)
+    // 1600ms:   start the suspense sequence
     setTimeout(() => {
       if (this.destroyed || this.transitionEpoch !== epoch) return;
       this.fx?.crtPowerOff(20).catch(() => {});
-    }, 1500);
+    }, 1200);
     setTimeout(() => {
       if (this.destroyed || this.transitionEpoch !== epoch) return;
-      this.startPhase2();
-    }, 2000);
+      this.startSuspense();
+    }, 1600);
+  }
+
+  // ─── Legacy Phase 2 transition (no longer used in main flow) ───
+  // Kept temporarily so existing tests / dev paths that reference it
+  // still compile. Calls transitionToSuspense instead.
+  private transitionToPhase2() {
+    this.transitionToSuspense();
   }
 
   private startPhase2() {
@@ -630,6 +649,13 @@ export class GameEngine {
   // ─── Suspense & Final Result ───────────────────────────────────
 
   private async startSuspense() {
+    // Capture epoch at start. If anything bumps it during the ~6s
+    // suspense animation (e.g. resetLocal in the test harness, or a
+    // setupLevel call from the gameplay loop), bail out before mutating
+    // phase. Without this check, runSuspenseAnimation's rAF chain
+    // completes regardless of epoch and writes this.phase='result'
+    // into a stale engine state.
+    const susEpoch = this.transitionEpoch;
     this.phase = 'suspense';
     this.updateInfo();
 
@@ -641,6 +667,7 @@ export class GameEngine {
     const success = await runSuspenseAnimation(
       finalProbability,
       (progress, phase) => {
+        if (this.transitionEpoch !== susEpoch) return;
         this.suspenseProgress = progress;
         this.suspensePhase = phase;
         this.updateInfo();
@@ -648,8 +675,8 @@ export class GameEngine {
       },
     );
 
+    if (this.destroyed || this.transitionEpoch !== susEpoch) return;
     this.phase = 'result';
-    const susEpoch = this.transitionEpoch;
     if (success) {
       this.lastResult = 'success';
       this.updateInfo();
@@ -934,6 +961,8 @@ export class GameEngine {
   }
 
   private async startRemoteSuspense(result: 'success' | 'fail') {
+    // Capture epoch — see startSuspense for rationale.
+    const susEpoch = this.transitionEpoch;
     this.phase = 'suspense';
     this.updateInfo();
 
@@ -944,12 +973,15 @@ export class GameEngine {
     await runSuspenseAnimation(
       finalProbability,
       (progress, phase) => {
+        if (this.transitionEpoch !== susEpoch) return;
         this.suspenseProgress = progress;
         this.suspensePhase = phase;
         this.updateInfo();
         this.applySuspenseFX(phase);
       },
     );
+
+    if (this.destroyed || this.transitionEpoch !== susEpoch) return;
 
     // Force the known result (server already decided)
     this.phase = 'result' as any;
@@ -1025,9 +1057,15 @@ export class GameEngine {
     }
     if (phase === 'phase1') {
       this.probabilityA = overlapPercent / 100;
+      // Phase 2 was removed — set probB = 1.0 so the existing
+      // probA * probB suspense math correctly evaluates to probA.
+      this.probabilityB = 1.0;
       // Play grab FX on multiplayer clients too
       this.playGrabFX(this.clawPos.x, this.clawPos.y, overlapPercent >= 10);
     } else if (phase === 'phase2') {
+      // Legacy path — kept for safety in case the server still emits a
+      // phase2 overlap event during transition. Should not happen in
+      // the new server flow.
       this.probabilityB = overlapPercent / 100;
       this.playGrabFX(this.p2ClawX, this.p2ClawY, overlapPercent >= 10);
     }
@@ -1182,45 +1220,46 @@ export class GameEngine {
       }
     }
 
-    // Phase 2 rendering from server state
-    if (state.phase === 'phase2' && state.phase2) {
-      // Show Phase 1 completion overlay before jumping to Phase 2
-      if (this.phase === 'phase1' && this.probabilityA > 0) {
-        this.phase = 'phase1_to_phase2';
-        this.updateInfo();
-        const p2Epoch = this.transitionEpoch;
-        // Delay Phase 2 setup
-        setTimeout(() => {
-          if (this.destroyed || this.transitionEpoch !== p2Epoch) return;
-          this.setupPhase2FromState(state);
-        }, 2500);
-        return;
-      }
-
-      if (this.phase !== 'phase2' && this.phase !== 'phase1_to_phase2' && this.phase !== 'phase2_countdown') {
-        this.setupPhase2FromState(state);
-      }
-
-      if (this.phase === 'phase2') {
-        this.p2ClawX = state.phase2.clawX;
-        this.p2ClawY = state.phase2.clawY;
-        this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
-        this.updatePhase2Camera();
+    // Phase 2 rendering from server state — DEAD CODE PATH.
+    //
+    // Phase 2 was removed from the game flow. The server now jumps
+    // directly from phase1 → result after a successful Phase 1 grab.
+    // This block is left in place as a defensive no-op in case any
+    // unmigrated server happens to broadcast a phase2 state during a
+    // rolling deploy. We log it once for diagnostics but do not enter
+    // the legacy descent UI.
+    if (state.phase === 'phase2') {
+      if (!(this as any)._loggedLegacyPhase2) {
+        (this as any)._loggedLegacyPhase2 = true;
+        console.warn('[engine] Received legacy state.phase=phase2 — Phase 2 was removed. Ignoring.');
       }
     }
 
-    // Result: show suspense sequence before revealing
+    // Result: show suspense sequence before revealing.
+    //
+    // Phase 2 was removed from the game flow. The new path: after a
+    // successful Phase 1 grab the server jumps directly to phase='result'
+    // with lastResult set. We trigger the suspense animation from
+    // phase='phase1' (the prior phase, since we never visited phase2).
     if (state.phase === 'result' && state.lastResult) {
-      if (this.phase === 'phase2' && this.probabilityA > 0 && this.probabilityB > 0) {
-        // Show Phase 2 completion, then suspense
+      const fromPhase1 = this.phase === 'phase1' && this.probabilityA > 0;
+      const fromPhase2Legacy = this.phase === 'phase2' && this.probabilityA > 0 && this.probabilityB > 0;
+      if (fromPhase1 || fromPhase2Legacy) {
+        // Ensure probabilityB is set for the suspense math (no-op when
+        // already set to 1.0 by setServerOverlap).
+        if (this.probabilityB === 0) this.probabilityB = 1.0;
+        // Reuse the phase2_to_suspense identifier as the generic
+        // "transitioning into suspense" state — the HUD already renders
+        // the PHASE 1 CLEAR overlay for it (we'll relabel its content
+        // to be Phase-2-agnostic).
         this.phase = 'phase2_to_suspense';
-        this.lastOverlap = Math.round(this.probabilityB * 100);
+        this.lastOverlap = Math.round(this.probabilityA * 100);
         this.updateInfo();
         const sEpoch = this.transitionEpoch;
         setTimeout(() => {
           if (this.destroyed || this.transitionEpoch !== sEpoch) return;
           this.startRemoteSuspense(state.lastResult as 'success' | 'fail');
-        }, 2500);
+        }, 1600);
         return;
       }
       if (this.phase !== 'suspense' && this.phase !== 'phase2_to_suspense') {

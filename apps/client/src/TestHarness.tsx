@@ -188,54 +188,82 @@ export function TestHarness() {
     });
   };
 
+  /** Build a remote-mode "result" state with a Phase-1-only success/fail. */
+  const makeResultState = (success: boolean, overlap = 0.5, mazeSeed?: number) => {
+    const e = engineRef.current as any;
+    const maze = mazeSeed != null
+      ? { ...e?.maze, seed: mazeSeed }
+      : e?.maze;
+    return makeState({
+      phase: 'result',
+      probabilityA: overlap,
+      probabilityB: 1.0,
+      lastResult: success ? 'success' : 'fail',
+      maze,
+    });
+  };
+
   // ─── Tests ─────────────────────────────────────────────────────
+  //
+  // Phase 2 was removed from the game. The new flow is:
+  //
+  //     phase1
+  //       └─ overlap >= 10% ──> phase1_to_phase2  (now means
+  //                                "PHASE 1 CLEAR! → suspense")
+  //                              └─ ~1.6s ──> suspense
+  //                                            └─ ~6.1s ──> result
+  //                                                          └─ next level
+  //       └─ overlap <  10% ──> resetPhase1 (immediate)
+  //
+  // The phase identifiers `phase1_to_phase2` and `phase2_to_suspense`
+  // are still in the union type but now both mean "post-grab transition".
+  // The old phase2_countdown / phase2 / phase2_to_suspense visual states
+  // are dead in the new flow.
 
   const TESTS: { id: string; name: string; run: () => Promise<{ pass: boolean; msg: string; diag?: string }> }[] = [
 
     // ─── GROUP A: LOCAL MODE ───────────────────────────────────
     {
       id: 'L1',
-      name: 'Local: successful Phase 1 grab transitions through full sequence',
+      name: 'Local: successful Phase 1 grab → phase1_to_phase2 → suspense → result',
       async run() {
         resetLocal();
         const e = engineRef.current as any;
-        // Wait a tick for engine to settle (intro animation)
         await wait(100);
-        const startPhase = e.phase;
-        if (startPhase !== 'phase1') return { pass: false, msg: `Expected initial phase='phase1', got '${startPhase}'` };
+        if (e.phase !== 'phase1') return { pass: false, msg: `Expected initial phase='phase1', got '${e.phase}'` };
         // Force grab on doll
-        const ok = localForceP1GrabSuccess();
-        if (!ok) return { pass: false, msg: 'Could not invoke localForceP1GrabSuccess' };
-        // Should immediately be in phase1_to_phase2
+        if (!localForceP1GrabSuccess()) return { pass: false, msg: 'localForceP1GrabSuccess returned false' };
         if (e.phase !== 'phase1_to_phase2') {
           return { pass: false, msg: `Expected phase='phase1_to_phase2' immediately after grab, got '${e.phase}'` };
         }
-        if (!e.phase1GrabCommitted) return { pass: false, msg: 'phase1GrabCommitted should be true after success' };
+        if (!e.phase1GrabCommitted) return { pass: false, msg: 'phase1GrabCommitted should be true' };
         if (!(e.probabilityA > 0)) return { pass: false, msg: `probabilityA should be > 0, got ${e.probabilityA}` };
-        // Wait for the scheduled startPhase2 (2000ms)
-        const reached = await waitForAnyPhase(['phase2_countdown', 'phase2'], 3000);
-        if (!reached) return { pass: false, msg: `Timeout: never reached phase2_countdown after 3s. Current phase=${e.phase}` };
-        // Wait for countdown to finish (3s) and reach phase2
-        const inPhase2 = await waitForPhase('phase2', 5000, 'after countdown');
-        if (!inPhase2) return { pass: false, msg: `Timeout: never reached phase2 after countdown. Current phase=${e.phase}` };
-        return { pass: true, msg: 'Reached phase2 cleanly via phase1→phase1_to_phase2→phase2_countdown→phase2' };
+        if (e.probabilityB !== 1.0) return { pass: false, msg: `probabilityB should be 1.0 (Phase 2 removed), got ${e.probabilityB}` };
+        // Wait for the scheduled startSuspense (~1.6s)
+        const inSuspense = await waitForPhase('suspense', 3000, 'enter suspense');
+        if (!inSuspense) return { pass: false, msg: `Timeout: never reached suspense. Current=${e.phase}` };
+        // Wait for suspense to resolve to result (~6.1s = 1.5+1.6+2+1)
+        const inResult = await waitForPhase('result', 9000, 'after suspense');
+        if (!inResult) return { pass: false, msg: `Timeout: never reached result. Current=${e.phase}` };
+        if (e.lastResult !== 'success' && e.lastResult !== 'fail') {
+          return { pass: false, msg: `lastResult should be set after result, got '${e.lastResult}'` };
+        }
+        return { pass: true, msg: `phase1 → phase1_to_phase2 → suspense → result (lastResult=${e.lastResult})` };
       },
     },
     {
       id: 'L2',
-      name: 'Local: failed Phase 1 grab (no overlap) returns to phase1 cleanly',
+      name: 'Local: failed Phase 1 grab (overlap < 10%) returns to phase1 cleanly',
       async run() {
         resetLocal();
         const e = engineRef.current as any;
         await wait(100);
-        // Force claw away from doll
         e.clawPos.x = e.dollPos.x + 200;
         e.clawPos.y = e.dollPos.y;
         const startCoins = e.coins;
         e.attemptPhase1Grab();
-        // Should fail and reset to phase1
         if (e.phase !== 'phase1') return { pass: false, msg: `Expected phase='phase1' after fail, got '${e.phase}'` };
-        if (e.coins !== startCoins + 1) return { pass: false, msg: `Coins should increment on fail (was ${startCoins}, now ${e.coins})` };
+        if (e.coins !== startCoins + 1) return { pass: false, msg: `Coins should increment on fail (${startCoins}→${e.coins})` };
         if (e.phase1GrabCommitted) return { pass: false, msg: 'phase1GrabCommitted should be false after fail' };
         if (e.lastResult !== 'fail') return { pass: false, msg: `lastResult should be 'fail', got '${e.lastResult}'` };
         return { pass: true, msg: `Failed grab cleanly reset (coins ${startCoins}→${e.coins})` };
@@ -250,23 +278,21 @@ export function TestHarness() {
         await wait(100);
         e.clawPos.x = e.dollPos.x;
         e.clawPos.y = e.dollPos.y;
-        // Trigger first grab via the keyboard handler
         e.keyHandler?.({ key: ' ', preventDefault: () => {} });
-        const afterFirst = { phase: e.phase, committed: e.phase1GrabCommitted, probA: e.probabilityA };
-        // Try a second press immediately
+        const after1 = { phase: e.phase, committed: e.phase1GrabCommitted, probA: e.probabilityA };
         e.keyHandler?.({ key: ' ', preventDefault: () => {} });
-        const afterSecond = { phase: e.phase, committed: e.phase1GrabCommitted, probA: e.probabilityA };
-        if (afterFirst.phase !== 'phase1_to_phase2') return { pass: false, msg: `First grab should set phase=phase1_to_phase2, got '${afterFirst.phase}'` };
-        if (!afterFirst.committed) return { pass: false, msg: 'First grab should set phase1GrabCommitted=true' };
-        if (afterSecond.phase !== afterFirst.phase || afterSecond.probA !== afterFirst.probA) {
-          return { pass: false, msg: `Second press should be no-op. After1=${JSON.stringify(afterFirst)} After2=${JSON.stringify(afterSecond)}` };
+        const after2 = { phase: e.phase, committed: e.phase1GrabCommitted, probA: e.probabilityA };
+        if (after1.phase !== 'phase1_to_phase2') return { pass: false, msg: `First grab should set phase='phase1_to_phase2', got '${after1.phase}'` };
+        if (!after1.committed) return { pass: false, msg: 'First grab should set phase1GrabCommitted=true' };
+        if (after2.phase !== after1.phase || after2.probA !== after1.probA) {
+          return { pass: false, msg: `Second press should be no-op. After1=${JSON.stringify(after1)} After2=${JSON.stringify(after2)}` };
         }
-        return { pass: true, msg: 'Second rapid grab press correctly ignored after Phase 1 commit' };
+        return { pass: true, msg: 'Second rapid grab press correctly ignored' };
       },
     },
     {
       id: 'L4',
-      name: 'Local: 3 consecutive Phase 1→2 cycles (no state leakage)',
+      name: 'Local: 3 consecutive Phase 1 grabs progress through suspense each time',
       async run() {
         let succeeded = 0;
         for (let i = 0; i < 3; i++) {
@@ -275,213 +301,193 @@ export function TestHarness() {
           await wait(100);
           localForceP1GrabSuccess();
           if (e.phase !== 'phase1_to_phase2') {
-            return { pass: false, msg: `Cycle ${i + 1}: phase mismatch immediately after grab. Expected phase1_to_phase2, got '${e.phase}'` };
+            return { pass: false, msg: `Cycle ${i + 1}: expected phase='phase1_to_phase2' after grab, got '${e.phase}'` };
           }
-          // Wait for phase2_countdown
-          const ok = await waitForPhase('phase2_countdown', 3000, `cycle ${i + 1} countdown`);
-          if (!ok) return { pass: false, msg: `Cycle ${i + 1}: never reached phase2_countdown` };
-          // Don't wait for full countdown, just verify the state machine progressed
+          // Wait for suspense to start (~1.6s)
+          const ok = await waitForPhase('suspense', 3000, `cycle ${i + 1}`);
+          if (!ok) return { pass: false, msg: `Cycle ${i + 1}: never reached suspense` };
           succeeded++;
         }
-        return { pass: succeeded === 3, msg: `${succeeded}/3 cycles reached phase2_countdown without state leakage` };
+        return { pass: succeeded === 3, msg: `${succeeded}/3 cycles reached suspense without state leakage` };
+      },
+    },
+    {
+      id: 'L5',
+      name: 'Local: probabilityB is set to 1.0 after a successful grab (Phase 2 removed)',
+      async run() {
+        resetLocal();
+        const e = engineRef.current as any;
+        await wait(100);
+        if (e.probabilityB !== 0) return { pass: false, msg: `probB should start at 0, got ${e.probabilityB}` };
+        localForceP1GrabSuccess();
+        if (e.probabilityB !== 1.0) return { pass: false, msg: `probB should be 1.0 after grab (Phase 2 removed), got ${e.probabilityB}` };
+        // The suspense math (probA × probB) should equal probA
+        const finalProb = e.probabilityA * e.probabilityB;
+        if (Math.abs(finalProb - e.probabilityA) > 0.0001) {
+          return { pass: false, msg: `finalProb (${finalProb}) should equal probA (${e.probabilityA})` };
+        }
+        return { pass: true, msg: `probB=1.0, finalProb=probA=${e.probabilityA}` };
       },
     },
 
     // ─── GROUP B: REMOTE MODE (synthetic state injection) ──────
     {
       id: 'R1',
-      name: 'Remote: phase=phase2 broadcast triggers transition through countdown',
+      name: 'Remote: server result broadcast triggers suspense from phase1',
       async run() {
         resetLocal();
         const e = engineRef.current as any;
         e.setRemoteMode();
-        // Need a baseline phase1 state with maze cached
         await e.applyServerState(makeState());
-        await wait(100);
-        // Server overlap event sets probA
+        await wait(50);
+        // Server emits overlap event first (sets probA + probB=1.0)
         e.setServerOverlap('phase1', 50);
-        if (!(e.probabilityA > 0)) return { pass: false, msg: `setServerOverlap did not set probabilityA: ${e.probabilityA}` };
-        // Inject phase=phase2 state (simulating server transition)
-        await e.applyServerState(makePhase2State());
-        if (e.phase !== 'phase1_to_phase2') {
-          return { pass: false, msg: `Expected phase='phase1_to_phase2' after phase2 injection, got '${e.phase}'` };
+        if (!(e.probabilityA > 0)) return { pass: false, msg: `probabilityA not set: ${e.probabilityA}` };
+        if (e.probabilityB !== 1.0) return { pass: false, msg: `probabilityB should be 1.0 after phase1 overlap, got ${e.probabilityB}` };
+        // Server then broadcasts state.phase='result' with lastResult set
+        await e.applyServerState(makeResultState(true, 0.5));
+        if (e.phase !== 'phase2_to_suspense') {
+          return { pass: false, msg: `Expected phase='phase2_to_suspense' (transitional) after result inject, got '${e.phase}'` };
         }
-        // Wait for the 2.5s setTimeout to fire setupPhase2FromState → phase2_countdown
-        const reachedCountdown = await waitForPhase('phase2_countdown', 4000, 'after setTimeout');
-        if (!reachedCountdown) return { pass: false, msg: `Timeout: never reached phase2_countdown. Current=${e.phase}` };
-        // Wait for full countdown
-        const inPhase2 = await waitForPhase('phase2', 5000, 'after countdown');
-        if (!inPhase2) return { pass: false, msg: `Timeout: never reached phase2. Current=${e.phase}` };
-        return { pass: true, msg: 'Remote phase1→phase2 transition completed through countdown to phase2' };
+        // Wait for suspense (1.6s setTimeout)
+        const inSuspense = await waitForPhase('suspense', 3000, 'enter suspense');
+        if (!inSuspense) return { pass: false, msg: `Timeout: never reached suspense. Current=${e.phase}` };
+        // Wait for result
+        const inResult = await waitForPhase('result', 9000, 'after suspense');
+        if (!inResult) return { pass: false, msg: `Timeout: never reached result. Current=${e.phase}` };
+        return { pass: true, msg: `Remote phase1 → suspense → result completed (lastResult=${e.lastResult})` };
       },
     },
     {
       id: 'R2',
-      name: 'Remote: race guard blocks phase1 broadcasts during phase1_to_phase2',
+      name: 'Remote: race guard blocks phase1 broadcasts during phase2_to_suspense',
       async run() {
         resetLocal();
         const e = engineRef.current as any;
         e.setRemoteMode();
         await e.applyServerState(makeState());
-        await wait(50);
+        await wait(20);
         e.setServerOverlap('phase1', 50);
-        await e.applyServerState(makePhase2State());
-        if (e.phase !== 'phase1_to_phase2') return { pass: false, msg: `Setup failed: phase=${e.phase}` };
-        // Inject 5 phase1 broadcasts at the SAME maze seed
-        const beforePhase = e.phase;
+        await e.applyServerState(makeResultState(true, 0.5));
+        if (e.phase !== 'phase2_to_suspense') return { pass: false, msg: `Setup failed: phase=${e.phase}` };
         for (let i = 0; i < 5; i++) {
           await e.applyServerState(makeState());
           await wait(20);
         }
-        if (e.phase !== beforePhase) {
-          return { pass: false, msg: `Race guard failed: phase changed from '${beforePhase}' to '${e.phase}' during phase1_to_phase2` };
+        if (e.phase !== 'phase2_to_suspense') {
+          return { pass: false, msg: `Race guard failed: phase=${e.phase} during phase2_to_suspense` };
         }
-        return { pass: true, msg: `Race guard held: phase stayed '${beforePhase}' across 5 racing phase1 broadcasts` };
+        return { pass: true, msg: `Race guard held: phase stayed 'phase2_to_suspense' across 5 racing phase1 broadcasts` };
       },
     },
     {
       id: 'R3',
-      name: 'Remote: same-seed phase1 broadcasts during phase2_countdown do NOT tear down',
+      name: 'Remote: race guard blocks phase1 broadcasts during suspense',
       async run() {
-        // This is the bug from commit decfece — was previously broken
         resetLocal();
         const e = engineRef.current as any;
         e.setRemoteMode();
         await e.applyServerState(makeState());
-        await wait(50);
+        await wait(20);
         e.setServerOverlap('phase1', 50);
-        await e.applyServerState(makePhase2State());
-        // Wait for phase1_to_phase2 → phase2_countdown
-        const inCountdown = await waitForPhase('phase2_countdown', 4000, 'enter countdown');
-        if (!inCountdown) return { pass: false, msg: `Timeout: never reached phase2_countdown` };
-        // Now inject 10 racing phase1 broadcasts with the SAME maze seed
+        await e.applyServerState(makeResultState(true, 0.5));
+        // Wait for suspense
+        const inSuspense = await waitForPhase('suspense', 3000, 'enter suspense');
+        if (!inSuspense) return { pass: false, msg: `Timeout: never reached suspense` };
+        // Inject racing phase1 broadcasts during the suspense window
         for (let i = 0; i < 10; i++) {
           await e.applyServerState(makeState());
           await wait(50);
         }
-        // The countdown should still be running (or already at phase2)
-        if (e.phase !== 'phase2_countdown' && e.phase !== 'phase2') {
-          return { pass: false, msg: `BUG: phase torn down from countdown. Now phase='${e.phase}'` };
+        if (e.phase !== 'suspense' && e.phase !== 'result') {
+          return { pass: false, msg: `Race guard failed: phase=${e.phase} during/after suspense` };
         }
-        return { pass: true, msg: `Phase stayed in countdown/phase2 across 10 racing phase1 broadcasts (decfece fix verified)` };
+        return { pass: true, msg: `Phase stayed in suspense/result across 10 racing phase1 broadcasts` };
       },
     },
     {
       id: 'R4',
       name: 'Remote: NEW level phase1 broadcast (different seed) DOES rebuild',
       async run() {
-        // After R3, verify the seed-based isNewLevel still detects real new levels
         resetLocal();
         const e = engineRef.current as any;
         e.setRemoteMode();
         await e.applyServerState(makeState());
         const initialSeed = e.maze?.seed;
-        // Inject phase1 with a DIFFERENT seed (a real new level)
-        const newSeedState = makeState({
-          maze: { ...e.maze, seed: (initialSeed ?? 0) + 999999 },
-        });
-        await e.applyServerState(newSeedState);
-        if (e.maze?.seed !== (initialSeed ?? 0) + 999999) {
-          return { pass: false, msg: `New seed not applied: was ${initialSeed}, expected ${(initialSeed ?? 0) + 999999}, got ${e.maze?.seed}` };
-        }
-        if (e.phase !== 'phase1') {
-          return { pass: false, msg: `Expected phase='phase1' after new-level broadcast, got '${e.phase}'` };
-        }
+        const newSeed = (initialSeed ?? 0) + 999999;
+        await e.applyServerState(makeState({ maze: { ...e.maze, seed: newSeed } }));
+        if (e.maze?.seed !== newSeed) return { pass: false, msg: `New seed not applied (${initialSeed}→${e.maze?.seed})` };
+        if (e.phase !== 'phase1') return { pass: false, msg: `Expected phase='phase1', got '${e.phase}'` };
         return { pass: true, msg: `Real new-level broadcast triggered scene rebuild (seed ${initialSeed}→${e.maze?.seed})` };
       },
     },
     {
       id: 'R5',
-      name: 'Remote: phase2_to_suspense racing phase1 broadcast does not break suspense',
-      async run() {
-        resetLocal();
-        const e = engineRef.current as any;
-        e.setRemoteMode();
-        await e.applyServerState(makeState());
-        e.setServerOverlap('phase1', 50);
-        await e.applyServerState(makePhase2State());
-        await waitForPhase('phase2_countdown', 4000, 'countdown');
-        await waitForPhase('phase2', 5000, 'phase2');
-        // Now simulate Phase 2 grab via the result block
-        e.setServerOverlap('phase2', 80); // probB = 0.8
-        const resultState = makeState({
-          phase: 'result',
-          probabilityA: 0.5,
-          probabilityB: 0.8,
-          lastResult: 'success',
-        });
-        await e.applyServerState(resultState);
-        if (e.phase !== 'phase2_to_suspense') {
-          return { pass: false, msg: `Expected phase='phase2_to_suspense' after result injection, got '${e.phase}'` };
-        }
-        // Inject racing phase1 broadcasts
-        for (let i = 0; i < 5; i++) {
-          await e.applyServerState(makeState());
-          await wait(30);
-        }
-        if (e.phase !== 'phase2_to_suspense') {
-          return { pass: false, msg: `Race guard failed during phase2_to_suspense: phase=${e.phase}` };
-        }
-        return { pass: true, msg: `phase2_to_suspense protected from racing phase1 broadcasts` };
-      },
-    },
-    {
-      id: 'R6',
       name: 'Remote: result lock holds for 3.5s then releases',
       async run() {
         resetLocal();
         const e = engineRef.current as any;
         e.setRemoteMode();
-        // Manually arm: pretend startRemoteSuspense just resolved
         e.phase = 'result';
         e.lastResult = 'success';
         e.resultLockUntil = Date.now() + 3500;
         e.probabilityA = 0.6;
-        e.probabilityB = 0.7;
-        // Inject phase1 broadcast — should be blocked
+        e.probabilityB = 1.0;
         await e.applyServerState(makeState());
-        if (e.phase !== 'result') {
-          return { pass: false, msg: `Result lock failed: phase changed to '${e.phase}' while lock active` };
-        }
-        // Force lock to expire
+        if (e.phase !== 'result') return { pass: false, msg: `Result lock failed: phase=${e.phase}` };
         e.resultLockUntil = Date.now() - 100;
-        // Inject another phase1 — should now flow through
-        await e.applyServerState(makeState({
-          maze: { ...e.maze, seed: 8888888 },
-        }));
-        if (e.phase !== 'phase1') {
-          return { pass: false, msg: `After lock expiration, expected phase='phase1', got '${e.phase}'` };
-        }
+        await e.applyServerState(makeState({ maze: { ...e.maze, seed: 8888888 } }));
+        if (e.phase !== 'phase1') return { pass: false, msg: `After lock expiration, expected phase='phase1', got '${e.phase}'` };
         return { pass: true, msg: 'Result lock correctly held then released' };
       },
     },
     {
+      id: 'R6',
+      name: 'Remote: legacy state.phase=phase2 broadcast is silently ignored',
+      async run() {
+        resetLocal();
+        const e = engineRef.current as any;
+        e.setRemoteMode();
+        await e.applyServerState(makeState());
+        const beforePhase = e.phase;
+        // Inject a legacy phase2 state — should be a no-op (Phase 2 removed)
+        await e.applyServerState(makePhase2State());
+        if (e.phase !== beforePhase) {
+          return { pass: false, msg: `Legacy phase2 broadcast changed phase: '${beforePhase}' → '${e.phase}'` };
+        }
+        return { pass: true, msg: `Legacy phase2 broadcast silently ignored (phase stayed '${beforePhase}')` };
+      },
+    },
+    {
       id: 'R7',
-      name: 'Remote: stress test — 20 cycles of phase1→phase2 transition',
+      name: 'Remote: stress test — 20 cycles of phase1 grab → result',
       async run() {
         let cycles = 0;
         for (let i = 0; i < 20; i++) {
           resetLocal();
           const e = engineRef.current as any;
           e.setRemoteMode();
-          await e.applyServerState(makeState({
-            maze: { ...(e.maze ?? makeState().maze), seed: 100000 + i },
-          }));
-          await wait(20);
+          await e.applyServerState(makeState({ maze: { ...(e.maze ?? makeState().maze), seed: 100000 + i } }));
+          await wait(15);
           e.setServerOverlap('phase1', 50);
-          await e.applyServerState(makePhase2State(1, 100000 + i));
-          if (e.phase !== 'phase1_to_phase2') {
-            return { pass: false, msg: `Cycle ${i + 1}: phase=${e.phase} after phase2 inject` };
+          const phaseBeforeResult = e.phase;
+          const probABefore = e.probabilityA;
+          await e.applyServerState(makeResultState(true, 0.5, 100000 + i));
+          if (e.phase !== 'phase2_to_suspense') {
+            return { pass: false, msg: `Cycle ${i + 1}: phase=${e.phase} after result inject (was ${phaseBeforeResult}, probA=${probABefore})` };
           }
-          // Race the transition with phase1 broadcasts
+          // Race the transition with phase1 broadcasts. Track every change.
+          const trace: string[] = [`start=${e.phase}`];
           for (let j = 0; j < 3; j++) {
-            await e.applyServerState(makeState({
-              maze: { ...e.maze, seed: 100000 + i },
-            }));
+            const before = e.phase;
+            await e.applyServerState(makeState({ maze: { ...e.maze, seed: 100000 + i } }));
+            const after = e.phase;
+            trace.push(`j${j}:${before}->${after}`);
             await wait(10);
+            if (e.phase !== before) trace.push(`j${j}post:${before}->${e.phase}`);
           }
-          if (e.phase !== 'phase1_to_phase2') {
-            return { pass: false, msg: `Cycle ${i + 1}: race guard broke at sub-iteration. phase=${e.phase}` };
+          if (e.phase !== 'phase2_to_suspense') {
+            return { pass: false, msg: `Cycle ${i + 1}: race guard broke (phase=${e.phase}) trace=[${trace.join(', ')}]` };
           }
           cycles++;
         }

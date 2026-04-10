@@ -333,6 +333,7 @@ export class GameLoopManager {
       clawDir: game.clawDir,
     });
     game.room.gameState.probabilityA = overlap;
+    game.room.gameState.probabilityB = 1.0;  // Phase 2 removed: no second probability
 
     // Broadcast the overlap result with debug positions to all players
     this.io.to(game.room.code).emit('game:overlap', {
@@ -344,10 +345,42 @@ export class GameLoopManager {
 
     if (overlap < OVERLAP_THRESHOLD) {
       this.failAndResetToPhase1(game);
-    } else {
-      game.probabilityA = overlap;
-      this.transitionToPhase2(game);
+      return;
     }
+
+    // ─── Phase 2 removed ─────────────────────────────────────────
+    // Final success/failure is now decided immediately after Phase 1
+    // using overlap as the probability. No descent step, no second
+    // grab. Math.random() < overlap → success.
+    game.probabilityA = overlap;
+    game.probabilityB = 1.0;
+    const success = Math.random() < overlap;
+
+    console.log('[grab] Phase1 result:', {
+      overlap: Math.round(overlap * 100) + '%',
+      success,
+    });
+
+    game.room.gameState.phase = 'result';
+    game.room.gameState.lastResult = success ? 'success' : 'fail';
+
+    this.io.to(game.room.code).emit('game:grab-result', {
+      probabilityA: overlap,
+      probabilityB: 1.0,
+      success,
+    });
+
+    // Schedule next level / restart after the suspense + popup window
+    // (suspense ~6.1s + popup ~3.5s = ~9.6s, allow a little extra).
+    setTimeout(() => {
+      if (!this.games.has(game.room.code)) return;
+      if (success) {
+        game.room.gameState.level = Math.min(30, game.room.gameState.level + 1);
+      } else {
+        game.room.gameState.coins++;
+      }
+      this.restartLevel(game);
+    }, 10000);
   }
 
   // ─── Phase 2 Grab ──────────────────────────────────────────────

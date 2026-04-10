@@ -151,25 +151,28 @@ export function HUD({
         </div>
       )}
 
-      {/* Phase 1 → Phase 2 transition */}
-      {phase === 'phase1_to_phase2' && (
+      {/* Post-grab transition (Phase 2 was removed — same overlay used for
+          both the local phase1_to_phase2 and the remote phase2_to_suspense
+          identifiers, since both now mean "successful Phase 1 grab,
+          heading into the suspense"). */}
+      {(phase === 'phase1_to_phase2' || phase === 'phase2_to_suspense') && (
         <div style={centerOverlayStyle}>
           <div style={{
             fontFamily: ARCADE.PIXEL_FONT, fontSize: 22,
             color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW,
             marginBottom: 10, animation: 'stamp-in 0.6s ease-out',
           }}>
-            PHASE 1 CLEAR!
+            GRAB!!
           </div>
           <div style={{ fontSize: 11, color: '#b0b0d0', marginBottom: 14, letterSpacing: 1, fontFamily: ARCADE.PIXEL_FONT }}>
-            OVERLAP  A
+            OVERLAP
           </div>
           <div style={{
             ...probBoxStyle,
             borderColor: ARCADE.CSS_NEON_CYAN,
             animation: 'stamp-in 0.6s ease-out',
           }}>
-            <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1 }}>PROB A</span>
+            <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1 }}>CHANCE</span>
             <span style={{
               fontFamily: ARCADE.PIXEL_FONT, fontSize: 44,
               color: ARCADE.CSS_NEON_CYAN, textShadow: ARCADE.GLOW_CYAN,
@@ -177,60 +180,6 @@ export function HUD({
             }}>
               {probabilityA}%
             </span>
-          </div>
-          <div style={{
-            fontFamily: ARCADE.PIXEL_FONT, fontSize: 10,
-            color: ARCADE.CSS_NEON_PINK, textShadow: ARCADE.GLOW_PINK,
-            marginTop: 14, letterSpacing: 1,
-            animation: 'neon-flicker 1.5s infinite',
-          }}>
-            LOADING PHASE 2...
-          </div>
-        </div>
-      )}
-
-      {/* Phase 2 → Suspense transition */}
-      {phase === 'phase2_to_suspense' && (
-        <div style={centerOverlayStyle}>
-          <div style={{
-            fontFamily: ARCADE.PIXEL_FONT, fontSize: 22,
-            color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW,
-            marginBottom: 10, animation: 'stamp-in 0.6s ease-out',
-          }}>
-            PHASE 2 CLEAR!
-          </div>
-          <div style={{ fontSize: 11, color: '#b0b0d0', marginBottom: 14, letterSpacing: 1, fontFamily: ARCADE.PIXEL_FONT }}>
-            OVERLAP  B
-          </div>
-          <div style={{
-            ...probBoxStyle,
-            borderColor: ARCADE.CSS_NEON_CYAN,
-            animation: 'stamp-in 0.6s ease-out',
-          }}>
-            <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1 }}>PROB B</span>
-            <span style={{
-              fontFamily: ARCADE.PIXEL_FONT, fontSize: 44,
-              color: ARCADE.CSS_NEON_CYAN, textShadow: ARCADE.GLOW_CYAN,
-              marginTop: 6,
-            }}>
-              {probabilityB}%
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16, alignItems: 'center' }}>
-            <div style={probBoxSmallStyle}>
-              <span style={smallLabelStyle}>A</span>
-              <span style={smallValueStyle}>{probabilityA}%</span>
-            </div>
-            <span style={{ fontSize: 18, color: ARCADE.CSS_NEON_PURPLE, fontFamily: ARCADE.PIXEL_FONT }}>X</span>
-            <div style={probBoxSmallStyle}>
-              <span style={smallLabelStyle}>B</span>
-              <span style={smallValueStyle}>{probabilityB}%</span>
-            </div>
-            <span style={{ fontSize: 18, color: ARCADE.CSS_NEON_PURPLE, fontFamily: ARCADE.PIXEL_FONT }}>=</span>
-            <div style={{ ...probBoxSmallStyle, borderColor: ARCADE.CSS_NEON_YELLOW }}>
-              <span style={{ ...smallLabelStyle, color: ARCADE.CSS_NEON_YELLOW }}>TOT</span>
-              <span style={{ ...smallValueStyle, color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW }}>{finalProb}%</span>
-            </div>
           </div>
           <div style={{
             fontFamily: ARCADE.PIXEL_FONT, fontSize: 10,
@@ -348,16 +297,16 @@ export function HUD({
         );
       })()}
 
-      {/* Suspense sequence */}
+      {/* Suspense sequence (Phase 2 was removed — only probA matters) */}
       {phase === 'suspense' && (
         <div style={{ ...centerOverlayStyle, minWidth: 320, maxWidth: '90vw' }}>
           {suspensePhase === 'showA' && (
             <>
-              <div style={{ fontSize: 11, color: ARCADE.CSS_NEON_CYAN, marginBottom: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1, textShadow: ARCADE.GLOW_CYAN }}>PHASE 1 RESULT</div>
+              <div style={{ fontSize: 11, color: ARCADE.CSS_NEON_CYAN, marginBottom: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1, textShadow: ARCADE.GLOW_CYAN }}>YOUR CHANCE</div>
               <div style={{ ...probBoxStyle, borderColor: ARCADE.CSS_NEON_CYAN }}>
-                <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT }}>PROB A</span>
+                <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT }}>OVERLAP</span>
                 <span style={{
-                  fontFamily: ARCADE.PIXEL_FONT, fontSize: 40,
+                  fontFamily: ARCADE.PIXEL_FONT, fontSize: 56,
                   color: '#fff', textShadow: ARCADE.GLOW_CYAN,
                   marginTop: 6, animation: 'stamp-in 0.5s ease-out',
                 }}>
@@ -367,46 +316,21 @@ export function HUD({
             </>
           )}
 
-          {suspensePhase === 'showB' && (
-            <>
-              <div style={{ fontSize: 11, color: ARCADE.CSS_NEON_CYAN, marginBottom: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1, textShadow: ARCADE.GLOW_CYAN }}>PHASE 2 RESULT</div>
-              <div style={{ display: 'flex', gap: 18, justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ ...probBoxStyle, borderColor: ARCADE.CSS_NEON_CYAN }}>
-                  <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT }}>A</span>
-                  <span style={{ fontFamily: ARCADE.PIXEL_FONT, fontSize: 24, color: '#fff', textShadow: ARCADE.GLOW_CYAN, marginTop: 4 }}>{probabilityA}%</span>
-                </div>
-                <div style={{ fontFamily: ARCADE.PIXEL_FONT, fontSize: 22, color: ARCADE.CSS_NEON_PURPLE }}>X</div>
-                <div style={{ ...probBoxStyle, borderColor: ARCADE.CSS_NEON_CYAN }}>
-                  <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT }}>B</span>
-                  <span style={{
-                    fontFamily: ARCADE.PIXEL_FONT, fontSize: 24, color: '#fff', textShadow: ARCADE.GLOW_CYAN,
-                    marginTop: 4, animation: 'stamp-in 0.5s ease-out',
-                  }}>{probabilityB}%</span>
-                </div>
-              </div>
-            </>
-          )}
+          {/* showB phase no longer emitted by runSuspenseAnimation. */}
 
           {suspensePhase === 'calculating' && (
             <>
               <div style={{ fontSize: 11, color: ARCADE.CSS_NEON_YELLOW, marginBottom: 12, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1, textShadow: ARCADE.GLOW_YELLOW }}>CALCULATING...</div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 12, alignItems: 'center' }}>
-                <div style={probBoxSmallStyle}>
-                  <span style={smallLabelStyle}>A</span>
-                  <span style={smallValueStyle}>{probabilityA}%</span>
-                </div>
-                <span style={{ fontSize: 18, color: ARCADE.CSS_NEON_PURPLE, fontFamily: ARCADE.PIXEL_FONT }}>X</span>
-                <div style={probBoxSmallStyle}>
-                  <span style={smallLabelStyle}>B</span>
-                  <span style={smallValueStyle}>{probabilityB}%</span>
-                </div>
-                <span style={{ fontSize: 18, color: ARCADE.CSS_NEON_PURPLE, fontFamily: ARCADE.PIXEL_FONT }}>=</span>
-                <div style={{ ...probBoxSmallStyle, borderColor: ARCADE.CSS_NEON_YELLOW }}>
-                  <span style={{ ...smallLabelStyle, color: ARCADE.CSS_NEON_YELLOW }}>TOT</span>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+                <div style={{ ...probBoxStyle, borderColor: ARCADE.CSS_NEON_YELLOW }}>
+                  <span style={{ ...smallLabelStyle, color: ARCADE.CSS_NEON_YELLOW }}>FINAL</span>
                   <span style={{
-                    ...smallValueStyle, color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW,
-                    animation: 'stamp-in 0.5s ease-out',
-                  }}>{finalProb}%</span>
+                    fontFamily: ARCADE.PIXEL_FONT, fontSize: 48,
+                    color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW,
+                    marginTop: 6, animation: 'stamp-in 0.5s ease-out',
+                  }}>
+                    {probabilityA}%
+                  </span>
                 </div>
               </div>
               <div style={{
@@ -439,7 +363,7 @@ export function HUD({
                 color: ARCADE.CSS_NEON_YELLOW, textShadow: ARCADE.GLOW_YELLOW,
                 animation: 'shake 0.1s ease-in-out infinite, pulse 0.6s ease-in-out infinite',
               }}>
-                {finalProb}%
+                {probabilityA}%
               </div>
               <div style={{
                 marginTop: 14, fontSize: 32,
@@ -535,8 +459,8 @@ export function HUD({
                 lineHeight: 1.8,
               }}>
                 {lastResult === 'success'
-                  ? `YOU WON AT ${finalProb}% CHANCE!`
-                  : `${finalProb}% CHANCE... SO CLOSE!`}
+                  ? `YOU WON AT ${probabilityA}% CHANCE!`
+                  : `${probabilityA}% CHANCE... SO CLOSE!`}
               </div>
             </div>
           </div>
