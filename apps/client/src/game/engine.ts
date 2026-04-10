@@ -12,6 +12,9 @@ import { Phase1Scene } from './phase1/Phase1Scene.js';
 import { Phase2Scene } from './phase2/Phase2Scene.js';
 import { ObstacleManager } from './phase1/ObstacleManager.js';
 import { runSuspenseAnimation } from './animations/suspense.js';
+import { ParticleSystem } from './animations/particles.js';
+import { TransitionFX } from './animations/transitions.js';
+import { ARCADE } from '../theme/arcade.js';
 
 export interface GameInfo {
   level: number;
@@ -29,6 +32,8 @@ export interface GameInfo {
   p2RightPlayerId: string | null;
   /** Phase 2 countdown seconds remaining */
   p2Countdown: number;
+  /** Intro splash phase — 'ready', 'go', or null. Drives full-screen pixel text. */
+  introSplash: 'ready' | 'go' | null;
 }
 
 type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' | 'phase2_to_suspense' | 'suspense' | 'result';
@@ -36,9 +41,12 @@ type GamePhase = 'phase1' | 'phase1_to_phase2' | 'phase2_countdown' | 'phase2' |
 export class GameEngine {
   private app: Application;
   private worldContainer!: Container;
+  private fxContainer!: Container;
   private phase1Scene!: Phase1Scene;
   private phase2Scene!: Phase2Scene;
   private obstacleManager!: ObstacleManager;
+  private particles!: ParticleSystem;
+  private fx!: TransitionFX;
   private onInfoUpdate: (info: GameInfo) => void;
 
   // Game state
@@ -99,9 +107,9 @@ export class GameEngine {
     const width = this.container.clientWidth || 800;
     const height = this.container.clientHeight || 600;
     try {
-      await this.app.init({ width, height, background: '#e8dff5', antialias: true });
+      await this.app.init({ width, height, background: ARCADE.DEEP_NAVY, antialias: true });
     } catch {
-      await this.app.init({ width, height, background: '#e8dff5', antialias: false });
+      await this.app.init({ width, height, background: ARCADE.DEEP_NAVY, antialias: false });
     }
     this.app.canvas.style.width = '100%';
     this.app.canvas.style.height = '100%';
@@ -110,9 +118,18 @@ export class GameEngine {
     this.worldContainer = new Container();
     this.app.stage.addChild(this.worldContainer);
 
+    // Particle layer sits in world space so sparkles follow the camera
+    this.fxContainer = new Container();
+    this.worldContainer.addChild(this.fxContainer);
+
     this.phase1Scene = new Phase1Scene(this.worldContainer);
     this.phase2Scene = new Phase2Scene(this.worldContainer);
     this.obstacleManager = new ObstacleManager(this.phase1Scene.getObstacleContainer());
+
+    this.particles = new ParticleSystem(this.fxContainer);
+    // TransitionFX lives on the top-level stage (screen space) so it can cover
+    // the whole canvas regardless of world camera movement.
+    this.fx = new TransitionFX(this.app, this.app.stage);
 
     if (!this.remoteMode) {
       this.setupLevel(this.level);
@@ -152,6 +169,7 @@ export class GameEngine {
     this.phase1Scene.setClaw(this.clawPos);
     this.phase1Scene.show();
     this.phase2Scene.hide();
+    this.phase1Scene.playIntro();
 
     // Spawn ghost obstacles for mid+ levels
     this.obstacleManager.spawn(level, this.maze, this.seed);
@@ -164,6 +182,34 @@ export class GameEngine {
     this.suspensePhase = '';
     this.grabLocked = false;
     this.updateInfo();
+
+    // CRT power-on + camera zoom entry animation
+    if (this.fx) {
+      this.fx.crtPowerOn(22).catch(() => {});
+      this.fx.cameraZoom(this.worldContainer, 1.3, 1.0, 36);
+    }
+    // Intro splash: READY! → GO! (HUD will render based on introSplash phase)
+    this.triggerIntroSplash();
+  }
+
+  // ─── Intro Splash ───────────────────────────────────────────────
+  private introSplashPhase: 'ready' | 'go' | null = null;
+  private introSplashTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private triggerIntroSplash() {
+    if (this.introSplashTimer) clearTimeout(this.introSplashTimer);
+    this.introSplashPhase = 'ready';
+    this.updateInfo();
+    this.introSplashTimer = setTimeout(() => {
+      if (this.destroyed) return;
+      this.introSplashPhase = 'go';
+      this.updateInfo();
+      this.introSplashTimer = setTimeout(() => {
+        if (this.destroyed) return;
+        this.introSplashPhase = null;
+        this.updateInfo();
+      }, 500);
+    }, 700);
   }
 
   private resetPhase1() {
@@ -178,6 +224,7 @@ export class GameEngine {
 
     this.phase1Scene.show();
     this.phase2Scene.hide();
+    this.phase1Scene.playIntro();
     this.updateInfo();
   }
 
@@ -243,6 +290,9 @@ export class GameEngine {
       ' dist=' + Math.sqrt((this.clawPos.x - this.dollPos.x) ** 2 + (this.clawPos.y - this.dollPos.y) ** 2).toFixed(0));
     this.lastOverlap = overlap * 100;
 
+    // Grab FX — flash + shake + sparkle at claw pos
+    this.playGrabFX(this.clawPos.x, this.clawPos.y, overlap >= OVERLAP_THRESHOLD);
+
     if (overlap < OVERLAP_THRESHOLD) {
       this.lastResult = 'fail';
       this.resetPhase1();
@@ -253,6 +303,144 @@ export class GameEngine {
     this.updateInfo();
   }
 
+  /** Shared grab visual FX — used by both phases and both local/remote. */
+  private playGrabFX(x: number, y: number, success: boolean) {
+    if (!this.fx || !this.particles) return;
+    this.fx.screenShake(12, success ? 5 : 3);
+    this.fx.glitchLines(6);
+    this.particles.emitSparkles(x, y, 22);
+    // Claw scale pulse — active claw container based on phase
+    const clawContainer = this.phase === 'phase2'
+      ? this.phase2Scene.getClawContainer()
+      : this.phase1Scene.getClawContainer();
+    if (clawContainer) {
+      this.animateClawPulse(clawContainer);
+    }
+    if (success) {
+      this.particles.emitStars(x, y, 10);
+      this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_YELLOW, 8);
+    } else {
+      this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_PINK, 6);
+    }
+  }
+
+  /** Pulse the claw container scale 1.0 → 1.15 → 1.0 over ~18 frames. */
+  private animateClawPulse(container: Container) {
+    let t = 0;
+    const dur = 18;
+    const tick = () => {
+      if (this.destroyed) return;
+      t++;
+      const norm = t / dur;
+      const scale = norm < 0.5
+        ? 1 + (0.15 * (norm / 0.5))
+        : 1.15 - (0.15 * ((norm - 0.5) / 0.5));
+      container.scale.set(scale);
+      if (t < dur) {
+        requestAnimationFrame(tick);
+      } else {
+        container.scale.set(1);
+      }
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /**
+   * Pick the scene container currently visible — used by success/fail
+   * cinematics so they run on whichever scene is on screen.
+   */
+  private getActiveScene() {
+    return this.phase1Scene.isVisible() ? this.phase1Scene : this.phase2Scene;
+  }
+
+  /** Cinematic "claw lifts doll → drops into prize chute" sequence. */
+  private playSuccessCinematic() {
+    const scene = this.getActiveScene();
+    const clawC = scene.getClawContainer();
+    const dollC = scene.getDollContainer();
+    if (!clawC || !dollC) return;
+
+    const clawStart = { x: clawC.x, y: clawC.y };
+    const dollStart = { x: dollC.x, y: dollC.y };
+    // Chute target — approximate bottom-right of the play area
+    const chuteX = clawStart.x + 120;
+    const chuteY = clawStart.y + 80;
+
+    const STAGE1 = 12;  // squeeze pulse
+    const STAGE2 = 28;  // lift + move to chute
+    const STAGE3 = 14;  // drop into chute
+    const STAGE4 = 10;  // fade out
+    let t = 0;
+    const tick = () => {
+      if (this.destroyed) return;
+      t++;
+      if (t <= STAGE1) {
+        const n = t / STAGE1;
+        clawC.scale.set(1 + Math.sin(n * Math.PI) * 0.25);
+      } else if (t <= STAGE1 + STAGE2) {
+        const n = (t - STAGE1) / STAGE2;
+        const ease = n * n * (3 - 2 * n);
+        clawC.x = clawStart.x + (chuteX - clawStart.x) * ease;
+        clawC.y = clawStart.y + (chuteY - clawStart.y) * ease - 20; // slight lift
+        dollC.x = dollStart.x + (chuteX - dollStart.x) * ease;
+        dollC.y = dollStart.y + (chuteY - dollStart.y) * ease - 20;
+      } else if (t <= STAGE1 + STAGE2 + STAGE3) {
+        const n = (t - STAGE1 - STAGE2) / STAGE3;
+        dollC.y = (chuteY - 20) + 40 * n;
+        dollC.rotation = n * 0.6;
+      } else if (t <= STAGE1 + STAGE2 + STAGE3 + STAGE4) {
+        const n = (t - STAGE1 - STAGE2 - STAGE3) / STAGE4;
+        dollC.alpha = 1 - n;
+      } else {
+        // Restore — next level setup will position correctly
+        clawC.scale.set(1);
+        clawC.x = clawStart.x;
+        clawC.y = clawStart.y;
+        dollC.alpha = 1;
+        dollC.rotation = 0;
+        dollC.x = dollStart.x;
+        dollC.y = dollStart.y;
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /** Cinematic "doll slips out of claw → claw droops" sequence. */
+  private playFailCinematic() {
+    const scene = this.getActiveScene();
+    const clawC = scene.getClawContainer();
+    const dollC = scene.getDollContainer();
+    if (!clawC || !dollC) return;
+
+    const clawStart = { x: clawC.x, y: clawC.y, rot: clawC.rotation, alpha: clawC.alpha };
+    const dollStart = { x: dollC.x, y: dollC.y, rot: dollC.rotation };
+
+    const DUR = 30;
+    let t = 0;
+    const tick = () => {
+      if (this.destroyed) return;
+      t++;
+      const n = Math.min(1, t / DUR);
+      dollC.y = dollStart.y + (n < 0.3 ? -10 * (n / 0.3) : 10 * ((n - 0.3) / 0.7));
+      dollC.rotation = dollStart.rot + (Math.random() - 0.5) * 0.5 * (1 - n);
+      clawC.rotation = -0.2 * n;
+      clawC.alpha = 1 - 0.3 * n;
+      if (t < DUR) {
+        requestAnimationFrame(tick);
+      } else {
+        clawC.rotation = clawStart.rot;
+        clawC.alpha = clawStart.alpha;
+        clawC.x = clawStart.x;
+        clawC.y = clawStart.y;
+        dollC.y = dollStart.y;
+        dollC.rotation = dollStart.rot;
+      }
+    };
+    requestAnimationFrame(tick);
+  }
+
   // ─── Phase 1 → Phase 2 Transition ─────────────────────────────
 
   private transitionToPhase2() {
@@ -260,11 +448,17 @@ export class GameEngine {
     this.lastResult = null;
     this.updateInfo();
 
-    // Hold the overlap/probability A display for 2.5 seconds
+    // 0-1500ms: HUD shows the "PHASE 1 CLEAR!" overlay
+    // 1500ms:   CRT power-off
+    // 2000ms:   start Phase 2 (which immediately does power-on)
+    setTimeout(() => {
+      if (this.destroyed) return;
+      this.fx?.crtPowerOff(20).catch(() => {});
+    }, 1500);
     setTimeout(() => {
       if (this.destroyed) return;
       this.startPhase2();
-    }, 2500);
+    }, 2000);
   }
 
   private startPhase2() {
@@ -295,6 +489,9 @@ export class GameEngine {
     this.phase2Scene.buildPath(this.p2Path, this.level % 30);
     this.phase2Scene.setClaw(this.p2ClawX, this.p2ClawY);
 
+    // CRT power-on for Phase 2
+    this.fx?.crtPowerOn(22).catch(() => {});
+
     // Countdown with role display
     this.phase = 'phase2_countdown';
     this.p2Countdown = 3;
@@ -304,10 +501,27 @@ export class GameEngine {
       if (this.destroyed) { clearInterval(countdownInterval); return; }
       this.p2Countdown--;
       this.updateInfo();
+      // Flash + shake on each tick
+      if (this.fx && this.particles) {
+        this.fx.screenShake(6, 2);
+        this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_CYAN, 4);
+      }
       if (this.p2Countdown <= 0) {
         clearInterval(countdownInterval);
         this.phase = 'phase2';
         this.updateInfo();
+        // GO! burst
+        if (this.fx && this.particles) {
+          this.fx.screenShake(14, 6);
+          this.fx.cameraZoom(this.worldContainer, 0.95, 1.0, 12);
+          this.particles.emitConfetti(
+            this.p2ClawX,
+            this.p2ClawY + 40,
+            30,
+          );
+          this.particles.emitStars(this.p2ClawX, this.p2ClawY + 40, 15);
+          this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_YELLOW, 6);
+        }
       }
     }, 1000);
   }
@@ -338,6 +552,9 @@ export class GameEngine {
     const overlap = calculateOverlap(clawBox, dollBox);
     this.lastOverlap = overlap * 100;
 
+    // Grab FX at claw's current screen position
+    this.playGrabFX(this.p2ClawX, this.p2ClawY, overlap >= OVERLAP_THRESHOLD);
+
     if (overlap < OVERLAP_THRESHOLD) {
       this.lastResult = 'fail';
       this.coins++;
@@ -354,8 +571,12 @@ export class GameEngine {
       this.updateInfo();
       setTimeout(() => {
         if (this.destroyed) return;
+        this.fx?.crtPowerOff(20).catch(() => {});
+      }, 1500);
+      setTimeout(() => {
+        if (this.destroyed) return;
         this.startSuspense();
-      }, 2500);
+      }, 2000);
     }
     this.updateInfo();
   }
@@ -366,6 +587,9 @@ export class GameEngine {
     this.phase = 'suspense';
     this.updateInfo();
 
+    // Power the screen back on for suspense
+    this.fx?.crtPowerOn(18).catch(() => {});
+
     const finalProbability = this.probabilityA * this.probabilityB;
 
     const success = await runSuspenseAnimation(
@@ -374,6 +598,7 @@ export class GameEngine {
         this.suspenseProgress = progress;
         this.suspensePhase = phase;
         this.updateInfo();
+        this.applySuspenseFX(phase);
       },
     );
 
@@ -381,20 +606,74 @@ export class GameEngine {
     if (success) {
       this.lastResult = 'success';
       this.updateInfo();
+      this.playSuccessFX();
       setTimeout(() => {
         if (this.destroyed) return;
         this.level = Math.min(30, this.level + 1);
         this.setupLevel(this.level);
-      }, 2000);
+      }, 2500);
     } else {
       this.lastResult = 'fail';
       this.coins++;
       this.updateInfo();
+      this.playFailFX();
       setTimeout(() => {
         if (this.destroyed) return;
         this.setupLevel(this.level);
-      }, 1500);
+      }, 2000);
     }
+  }
+
+  // ─── Suspense & Result FX ───────────────────────────────────────
+  private lastSuspensePhase = '';
+  private applySuspenseFX(phase: string) {
+    if (phase === this.lastSuspensePhase) return;
+    this.lastSuspensePhase = phase;
+    if (!this.fx || !this.particles) return;
+
+    switch (phase) {
+      case 'showA':
+        this.particles.emitSparkles(this.app.screen.width / 2, this.app.screen.height / 2, 12);
+        break;
+      case 'showB':
+        this.particles.emitSparkles(this.app.screen.width / 2, this.app.screen.height / 2, 12);
+        break;
+      case 'drumroll':
+        this.fx.screenShake(120, 4);
+        this.fx.glitchLines(120);
+        break;
+      case 'reveal':
+        this.particles.emitFlash(this.app.screen.width, this.app.screen.height, ARCADE.NEON_WHITE, 8);
+        break;
+    }
+  }
+
+  private playSuccessFX() {
+    if (!this.fx || !this.particles) return;
+    const w = this.app.screen.width;
+    const h = this.app.screen.height;
+    this.fx.screenShake(30, 8);
+    this.particles.emitFlash(w, h, ARCADE.NEON_YELLOW, 12);
+    this.particles.emitConfetti(w / 2, h / 2, 80);
+    this.particles.emitStars(w / 2, h / 2, 30);
+    // Cinematic claw+doll choreography
+    this.playSuccessCinematic();
+    // Staggered bursts for cinematic feel
+    setTimeout(() => { if (!this.destroyed) this.particles?.emitConfetti(w * 0.3, h * 0.3, 30); }, 200);
+    setTimeout(() => { if (!this.destroyed) this.particles?.emitConfetti(w * 0.7, h * 0.3, 30); }, 350);
+    setTimeout(() => { if (!this.destroyed) this.particles?.emitStars(w / 2, h / 2, 20); }, 500);
+  }
+
+  private playFailFX() {
+    if (!this.fx || !this.particles) return;
+    const w = this.app.screen.width;
+    const h = this.app.screen.height;
+    this.fx.screenShake(30, 10);
+    this.fx.glitchLines(30);
+    this.particles.emitFlash(w, h, ARCADE.NEON_PINK, 10);
+    this.particles.emitSparks(w / 2, h / 2, 20);
+    // Doll slip + claw droop cinematic
+    this.playFailCinematic();
   }
 
   // ─── Game Loop ─────────────────────────────────────────────────
@@ -422,6 +701,10 @@ export class GameEngine {
     if (this.phase === 'phase2' || this.phase === 'phase2_countdown' || this.phase === 'suspense') {
       this.phase2Scene.updateAnimations(this.animFrame);
     }
+
+    // Global FX systems
+    this.fx?.update();
+    this.particles?.update();
 
     requestAnimationFrame(() => this.gameLoop());
   }
@@ -550,6 +833,7 @@ export class GameEngine {
       p2LeftPlayerId: this.p2LeftPlayerId,
       p2RightPlayerId: this.p2RightPlayerId,
       p2Countdown: this.p2Countdown,
+      introSplash: this.introSplashPhase,
     });
   }
 
@@ -589,6 +873,8 @@ export class GameEngine {
     this.phase = 'suspense';
     this.updateInfo();
 
+    this.fx?.crtPowerOn(18).catch(() => {});
+
     const finalProbability = this.probabilityA * this.probabilityB;
 
     await runSuspenseAnimation(
@@ -597,6 +883,7 @@ export class GameEngine {
         this.suspenseProgress = progress;
         this.suspensePhase = phase;
         this.updateInfo();
+        this.applySuspenseFX(phase);
       },
     );
 
@@ -604,6 +891,12 @@ export class GameEngine {
     this.phase = 'result' as any;
     this.lastResult = result;
     this.updateInfo();
+
+    if (result === 'success') {
+      this.playSuccessFX();
+    } else {
+      this.playFailFX();
+    }
   }
 
   /** Handle direction input from touch controls (local mode) */
@@ -661,8 +954,11 @@ export class GameEngine {
     }
     if (phase === 'phase1') {
       this.probabilityA = overlapPercent / 100;
+      // Play grab FX on multiplayer clients too
+      this.playGrabFX(this.clawPos.x, this.clawPos.y, overlapPercent >= 10);
     } else if (phase === 'phase2') {
       this.probabilityB = overlapPercent / 100;
+      this.playGrabFX(this.p2ClawX, this.p2ClawY, overlapPercent >= 10);
     }
     this.updateInfo();
   }
@@ -769,6 +1065,8 @@ export class GameEngine {
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
     }
+    try { this.particles?.destroy(); } catch { /* noop */ }
+    try { this.fx?.destroy(); } catch { /* noop */ }
     try { this.app.destroy(true); } catch { /* noop */ }
   }
 }

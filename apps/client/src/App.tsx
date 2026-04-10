@@ -7,6 +7,7 @@ import { Lobby } from './ui/Lobby.js';
 import { VoiceControls } from './ui/VoiceControls.js';
 import { PlayerDirectionOverlay } from './ui/PlayerDirectionOverlay.js';
 import { TouchControls } from './ui/TouchControls.js';
+import { ARCADE } from './theme/arcade.js';
 import type { AnyDirection } from '@qwas/shared';
 import type { GameState, PlayerState } from '@qwas/shared';
 
@@ -45,6 +46,7 @@ export function App() {
     p2LeftPlayerId: null as string | null,
     p2RightPlayerId: null as string | null,
     p2Countdown: 0,
+    introSplash: null as 'ready' | 'go' | null,
   });
 
   // ─── Local Game ─────────────────────────────────────────────
@@ -73,36 +75,103 @@ export function App() {
 
   // ─── Auto-join for devtest mode ──────────────────────────────
 
+  // ─── Devtest auto-connect (host creates room, joiners wait for broadcast) ───
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const devtest = params.get('devtest');
-    const room = params.get('room');
     const name = params.get('name');
     const isHostParam = params.get('host') === '1';
+    const roomFromUrl = params.get('room'); // back-compat if provided
 
-    if (!devtest || !room || !name) return;
+    if (!devtest || !name) return;
 
-    // Small stagger so players don't all connect at the exact same time
-    const delay = isHostParam ? 200 : 500 + Math.random() * 500;
-    const timer = setTimeout(() => {
+    const channel = (typeof BroadcastChannel !== 'undefined')
+      ? new BroadcastChannel('qwas-devtest-room')
+      : null;
+
+    let joinedCode: string | null = null;
+
+    // Joiner: listen for the host's room code broadcast.
+    const onMessage = (ev: MessageEvent) => {
+      if (isHostParam) return;
+      if (joinedCode) return;
+      if (!ev?.data || typeof ev.data !== 'object') return;
+      if (ev.data.type !== 'room-code' || typeof ev.data.code !== 'string') return;
+      joinedCode = ev.data.code;
+      const gs = socketRef.current ?? initSocket();
+      const tryJoin = () => {
+        if (gs.connected) {
+          gs.joinRoom(joinedCode!, name);
+        } else {
+          setTimeout(tryJoin, 200);
+        }
+      };
+      setTimeout(tryJoin, Math.random() * 300);
+    };
+    channel?.addEventListener('message', onMessage);
+
+    // Host: create the room ONCE shortly after mount.
+    const hostTimer = isHostParam ? setTimeout(() => {
+      const gs = initSocket();
+      const tryCreate = () => {
+        if (gs.connected) {
+          gs.createRoom(name);
+        } else {
+          setTimeout(tryCreate, 200);
+        }
+      };
+      tryCreate();
+    }, 200) : null;
+
+    // Joiner with pre-baked URL room code (back-compat): join directly.
+    const joinerUrlTimer = (!isHostParam && roomFromUrl) ? setTimeout(() => {
       const gs = initSocket();
       const tryJoin = () => {
         if (gs.connected) {
-          if (isHostParam) {
-            gs.createRoom(name);
-          } else {
-            gs.joinRoom(room, name);
-          }
+          gs.joinRoom(roomFromUrl, name);
         } else {
-          setTimeout(tryJoin, 300);
+          setTimeout(tryJoin, 200);
         }
       };
       tryJoin();
-    }, delay);
+    }, 500 + Math.random() * 500) : null;
 
-    return () => clearTimeout(timer);
+    // Pre-warm the joiner's socket so `joinRoom` is instant when the broadcast
+    // arrives (no extra round-trip waiting for socket connect).
+    const joinerPrewarmTimer = (!isHostParam && !roomFromUrl) ? setTimeout(() => {
+      if (!socketRef.current) initSocket();
+    }, 400) : null;
+
+    return () => {
+      if (hostTimer) clearTimeout(hostTimer);
+      if (joinerUrlTimer) clearTimeout(joinerUrlTimer);
+      if (joinerPrewarmTimer) clearTimeout(joinerPrewarmTimer);
+      channel?.removeEventListener('message', onMessage);
+      channel?.close();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ─── Devtest host: publish our room code to sibling iframes ───
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('devtest') !== '1') return;
+    if (params.get('host') !== '1') return;
+    if (!roomCode) return;
+
+    const channel = new BroadcastChannel('qwas-devtest-room');
+    // Publish immediately, then a few more times to cover slow-mounting siblings.
+    const publish = () => channel.postMessage({ type: 'room-code', code: roomCode });
+    publish();
+    const interval = setInterval(publish, 300);
+    const stop = setTimeout(() => clearInterval(interval), 4000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(stop);
+      channel.close();
+    };
+  }, [roomCode]);
 
   // ─── Multiplayer Connection ─────────────────────────────────
 
@@ -379,6 +448,7 @@ export function App() {
         p2LeftPlayerId={gameInfo.p2LeftPlayerId}
         p2RightPlayerId={gameInfo.p2RightPlayerId}
         p2Countdown={gameInfo.p2Countdown}
+        introSplash={gameInfo.introSplash}
         myPlayerId={myPlayerId}
         playerNames={playerNames}
         onRestart={handleRestart}
@@ -433,21 +503,29 @@ export function App() {
       {connectionLost && !pauseMessage && (
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'rgba(40, 35, 55, 0.5)',
+          background: 'rgba(10,14,44,0.7)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          zIndex: 99, backdropFilter: 'blur(2px)',
+          zIndex: 99, backdropFilter: 'blur(4px)',
         }}>
           <div style={{
             width: 36, height: 36,
-            border: '3px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#fff',
+            border: `3px solid rgba(0,229,255,0.3)`,
+            borderTopColor: ARCADE.CSS_NEON_CYAN,
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
-            marginBottom: 16,
+            marginBottom: 20,
+            boxShadow: `0 0 18px ${ARCADE.CSS_NEON_CYAN}`,
           }} />
-          <div style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>
-            서버 재연결 중...
+          <div style={{
+            fontFamily: ARCADE.PIXEL_FONT,
+            color: ARCADE.CSS_NEON_CYAN,
+            textShadow: ARCADE.GLOW_CYAN,
+            fontSize: 14,
+            letterSpacing: 2,
+            animation: 'neon-flicker 2s infinite',
+          }}>
+            RECONNECTING...
           </div>
         </div>
       )}
@@ -455,24 +533,31 @@ export function App() {
       {pauseMessage && (
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'rgba(40, 35, 55, 0.55)',
+          background: 'rgba(10,14,44,0.75)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           zIndex: 100,
-          backdropFilter: 'blur(3px)',
+          backdropFilter: 'blur(5px)',
         }}>
-          {/* Spinner */}
           <div style={{
             width: 48, height: 48,
-            border: '4px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#fff',
+            border: `4px solid rgba(255,46,147,0.3)`,
+            borderTopColor: ARCADE.CSS_NEON_PINK,
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
-            marginBottom: 20,
+            marginBottom: 24,
+            boxShadow: `0 0 18px ${ARCADE.CSS_NEON_PINK}`,
           }} />
           <div style={{
-            color: '#fff', fontSize: 18, fontWeight: 600,
-            textAlign: 'center', maxWidth: 320,
+            fontFamily: ARCADE.PIXEL_FONT,
+            color: ARCADE.CSS_NEON_PINK,
+            textShadow: ARCADE.GLOW_PINK,
+            fontSize: 14,
+            textAlign: 'center',
+            maxWidth: 320,
+            letterSpacing: 2,
+            lineHeight: 1.8,
+            padding: '0 20px',
           }}>
             {pauseMessage}
           </div>
@@ -480,18 +565,34 @@ export function App() {
             <div
               onClick={() => { navigator.clipboard.writeText(roomCode); }}
               style={{
-                marginTop: 16, padding: '8px 20px',
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: 10, color: '#fff', fontSize: 13,
-                cursor: 'pointer', userSelect: 'none',
+                marginTop: 20,
+                padding: '10px 22px',
+                background: 'rgba(0,0,0,0.4)',
+                border: `2px solid ${ARCADE.CSS_NEON_YELLOW}`,
+                borderRadius: 4,
+                color: ARCADE.CSS_NEON_YELLOW,
+                fontSize: 11,
+                fontFamily: ARCADE.PIXEL_FONT,
+                letterSpacing: 2,
+                textShadow: ARCADE.GLOW_YELLOW,
+                boxShadow: `0 0 12px ${ARCADE.CSS_NEON_YELLOW}`,
+                cursor: 'pointer',
+                userSelect: 'none',
               }}>
-              접속 코드: <span style={{ fontWeight: 700, letterSpacing: 3, fontFamily: 'monospace', fontSize: 18 }}>{roomCode}</span>
-              <span style={{ marginLeft: 8, fontSize: 14 }}>📋</span>
+              CODE: <span style={{ fontWeight: 700, letterSpacing: 4, fontSize: 16 }}>{roomCode}</span>
+              <span style={{ marginLeft: 8, fontSize: 13 }}>📋</span>
             </div>
           )}
           <style>{`
             @keyframes spin {
               to { transform: rotate(360deg); }
+            }
+            @keyframes neon-flicker {
+              0%, 100% { opacity: 1; }
+              92% { opacity: 1; }
+              93% { opacity: 0.3; }
+              95% { opacity: 1; }
+              97% { opacity: 0.6; }
             }
           `}</style>
         </div>

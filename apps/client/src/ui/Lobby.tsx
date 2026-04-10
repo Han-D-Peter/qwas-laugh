@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { PlayerState } from '@qwas/shared';
 import type { VoiceChatManager } from '../voice/webrtc.js';
 import { VoiceControls } from './VoiceControls.js';
+import { LobbyBackground } from './LobbyBackground.js';
+import { ARCADE } from '../theme/arcade.js';
 
 interface LobbyProps {
   mode: 'menu' | 'creating' | 'joining' | 'waiting';
@@ -27,12 +29,20 @@ export function Lobby({
 
   return (
     <div style={containerStyle}>
+      <LobbyBackground />
+
+      {/* Scanline overlay across entire lobby */}
+      <div style={scanlineOverlayStyle} />
+
       <div style={cardStyle}>
-        <h1 style={{ color: '#4a3f6b', fontSize: 28, margin: '0 0 8px' }}>
-          협동 인형뽑기
+        <h1 style={titleStyle}>
+          CLAW MACHINE
         </h1>
-        <p style={{ color: '#8b7bb5', fontSize: 14, margin: '0 0 24px' }}>
-          4명이 함께하는 협동 게임
+        <div style={subtitleStyle}>
+          협동 인형뽑기
+        </div>
+        <p style={taglineStyle}>
+          4-PLAYER CO-OP GAME
         </p>
 
         {error && (
@@ -43,32 +53,32 @@ export function Lobby({
           <>
             <input
               style={inputStyle}
-              placeholder="닉네임 입력"
+              placeholder="NICKNAME"
               value={name}
               onChange={e => setName(e.target.value)}
               maxLength={12}
             />
-            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button
-                style={btnPrimary}
+                style={name.trim() ? btnPrimary : btnDisabled}
                 onClick={() => name.trim() && onCreateRoom(name.trim())}
                 disabled={!name.trim()}
               >
-                방 만들기
+                CREATE
               </button>
               <button
-                style={btnSecondary}
+                style={name.trim() ? btnSecondary : btnDisabled}
                 onClick={() => name.trim() && onJoinRoom('', name.trim())}
                 disabled={!name.trim()}
               >
-                참여하기
+                JOIN
               </button>
             </div>
             <button
-              style={{ ...btnText, marginTop: 16 }}
+              style={{ ...btnText, marginTop: 18 }}
               onClick={onStartLocal}
             >
-              로컬 싱글플레이
+              &gt;&gt;  LOCAL  SOLO  PLAY  &lt;&lt;
             </button>
           </>
         )}
@@ -77,17 +87,17 @@ export function Lobby({
           <>
             <input
               style={inputStyle}
-              placeholder="접속 코드 입력 (4자리)"
+              placeholder="ROOM CODE (4)"
               value={code}
               onChange={e => setCode(e.target.value.toUpperCase())}
               maxLength={4}
             />
             <button
-              style={{ ...btnPrimary, marginTop: 12 }}
+              style={{ ...(code.length === 4 ? btnPrimary : btnDisabled), marginTop: 12, flex: 'none', width: '100%' }}
               onClick={() => code.length === 4 && onJoinRoom(code, name)}
               disabled={code.length !== 4}
             >
-              입장하기
+              ENTER
             </button>
           </>
         )}
@@ -95,42 +105,39 @@ export function Lobby({
         {mode === 'waiting' && roomCode && (
           <>
             <div style={{ margin: '16px 0' }}>
-              <div style={{ color: '#8b7bb5', fontSize: 13, marginBottom: 4 }}>접속 코드</div>
+              <div style={sectionLabel}>ROOM CODE</div>
               <div
                 onClick={() => { navigator.clipboard.writeText(roomCode!); }}
-                title="클릭하여 복사"
-                style={{ ...codeDisplayStyle, cursor: 'pointer', position: 'relative' }}
+                title="Click to copy"
+                style={codeDisplayStyle}
               >
                 {roomCode}
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 18, opacity: 0.6 }}>📋</span>
+                <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 18, opacity: 0.6 }}>📋</span>
               </div>
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#8b7bb5', fontSize: 13, marginBottom: 8 }}>플레이어 ({players.length}/4)</div>
-              {players.map((p, i) => (
+            <div style={{ marginBottom: 18 }}>
+              <div style={sectionLabel}>PLAYERS ({players.length}/4)</div>
+              {players.map((p) => (
                 <div key={p.id} style={playerRowStyle}>
                   <span style={{ fontWeight: 600 }}>{p.name}</span>
-                  <span style={{ color: '#9b8ec4', fontSize: 12 }}>
-                    {p.assignedDirection === 'up' ? '위' :
-                     p.assignedDirection === 'down' ? '아래' :
-                     p.assignedDirection === 'left' ? '좌' : '우'}
-                    {p.isHost ? ' (방장)' : ''}
+                  <span style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1 }}>
+                    {p.assignedDirection === 'up' ? 'UP' :
+                     p.assignedDirection === 'down' ? 'DOWN' :
+                     p.assignedDirection === 'left' ? 'LEFT' : 'RIGHT'}
+                    {p.isHost ? ' *HOST' : ''}
                   </span>
                 </div>
               ))}
               {Array.from({ length: 4 - players.length }).map((_, i) => (
-                <div key={`empty-${i}`} style={{ ...playerRowStyle, opacity: 0.4 }}>
-                  대기 중...
+                <div key={`empty-${i}`} style={{ ...playerRowStyle, opacity: 0.35 }}>
+                  WAITING...
                 </div>
               ))}
             </div>
 
             {/* Voice chat in lobby */}
-            <div style={{
-              margin: '16px 0', padding: '12px',
-              background: '#f8f4ff', borderRadius: 12,
-            }}>
+            <div style={voicePanelStyle}>
               <VoiceControls
                 voiceManager={voiceManager}
                 playerNames={playerNames}
@@ -140,111 +147,239 @@ export function Lobby({
 
             {isHost && (
               <button
-                style={btnPrimary}
+                style={{ ...btnPrimary, width: '100%', marginTop: 4 }}
                 onClick={onStartGame}
               >
-                게임 시작
+                START GAME
               </button>
             )}
             {!isHost && (
-              <p style={{ color: '#8b7bb5', fontSize: 13 }}>방장이 게임을 시작할 때까지 대기 중...</p>
+              <p style={{ color: ARCADE.CSS_NEON_CYAN, fontSize: 10, fontFamily: ARCADE.PIXEL_FONT, letterSpacing: 1, marginTop: 8, textShadow: ARCADE.GLOW_CYAN }}>
+                WAITING FOR HOST...
+              </p>
             )}
           </>
         )}
       </div>
+
+      <style>{`
+        @keyframes neon-flicker {
+          0%, 100% { opacity: 1; }
+          92% { opacity: 1; }
+          93% { opacity: 0.3; }
+          95% { opacity: 1; }
+          97% { opacity: 0.6; }
+          98% { opacity: 1; }
+        }
+        @keyframes title-pulse {
+          0%, 100% { text-shadow: 0 0 4px #ff2e93, 0 0 10px #ff2e93, 0 0 20px #ff2e93; }
+          50% { text-shadow: 0 0 6px #ff2e93, 0 0 16px #ff2e93, 0 0 28px #ff2e93, 0 0 40px #ff2e93; }
+        }
+      `}</style>
     </div>
   );
 }
 
+// ─── Styles ───
+
 const containerStyle: React.CSSProperties = {
-  width: '100%', height: '100%',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  background: 'linear-gradient(135deg, #f0e6f6 0%, #e0d4f0 100%)',
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: ARCADE.CSS_DEEP_NAVY,
   padding: 16,
-  overflow: 'auto',
+  overflow: 'hidden',
+  position: 'relative',
+};
+
+const scanlineOverlayStyle: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  pointerEvents: 'none',
+  backgroundImage: 'repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.25) 2px, rgba(0,0,0,0.25) 3px)',
+  mixBlendMode: 'multiply',
+  zIndex: 2,
 };
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 24,
-  padding: '28px 24px',
-  boxShadow: '0 8px 40px rgba(100, 80, 160, 0.15)',
+  background: 'rgba(10,14,44,0.82)',
+  border: `2px solid ${ARCADE.CSS_NEON_CYAN}`,
+  borderRadius: 8,
+  padding: '30px 28px',
+  boxShadow: ARCADE.BOX_GLOW_CYAN,
+  backdropFilter: 'blur(4px)',
   textAlign: 'center',
   minWidth: 340,
   maxWidth: 420,
+  zIndex: 3,
+  position: 'relative',
+  color: '#e0e0f0',
+};
+
+const titleStyle: React.CSSProperties = {
+  fontFamily: ARCADE.PIXEL_FONT,
+  fontSize: 22,
+  color: '#fff',
+  margin: '0 0 6px',
+  letterSpacing: 3,
+  animation: 'title-pulse 2s ease-in-out infinite',
+  textShadow: ARCADE.GLOW_PINK,
+};
+
+const subtitleStyle: React.CSSProperties = {
+  color: ARCADE.CSS_NEON_CYAN,
+  fontSize: 14,
+  margin: '0 0 4px',
+  letterSpacing: 2,
+  textShadow: ARCADE.GLOW_CYAN,
+  fontFamily: ARCADE.SYSTEM_FONT,
+  fontWeight: 600,
+};
+
+const taglineStyle: React.CSSProperties = {
+  color: ARCADE.CSS_NEON_YELLOW,
+  fontSize: 9,
+  margin: '0 0 22px',
+  letterSpacing: 2,
+  fontFamily: ARCADE.PIXEL_FONT,
+  textShadow: ARCADE.GLOW_YELLOW,
+  animation: 'neon-flicker 3s infinite',
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 16px',
-  borderRadius: 12,
-  border: '2px solid #e0d4f0',
-  fontSize: 16,
+  borderRadius: 4,
+  border: `2px solid ${ARCADE.CSS_NEON_CYAN}`,
+  background: 'rgba(0,0,0,0.5)',
+  fontSize: 14,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
+  color: '#fff',
   outline: 'none',
   textAlign: 'center',
   boxSizing: 'border-box',
+  boxShadow: `inset 0 0 10px rgba(0,229,255,0.15)`,
 };
 
 const btnPrimary: React.CSSProperties = {
   flex: 1,
-  padding: '12px 24px',
-  borderRadius: 12,
-  border: 'none',
-  background: 'linear-gradient(135deg, #9b8ec4 0%, #7ecbf5 100%)',
-  color: '#fff',
-  fontSize: 15,
+  padding: '12px 18px',
+  borderRadius: 4,
+  border: `2px solid ${ARCADE.CSS_NEON_PINK}`,
+  background: 'rgba(255,46,147,0.15)',
+  color: ARCADE.CSS_NEON_PINK,
+  fontSize: 11,
   fontWeight: 600,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
   cursor: 'pointer',
+  boxShadow: `0 0 12px ${ARCADE.CSS_NEON_PINK}`,
+  textShadow: ARCADE.GLOW_PINK,
+  transition: 'all 0.15s ease',
 };
 
 const btnSecondary: React.CSSProperties = {
   flex: 1,
-  padding: '12px 24px',
-  borderRadius: 12,
-  border: '2px solid #9b8ec4',
-  background: 'transparent',
-  color: '#9b8ec4',
-  fontSize: 15,
+  padding: '12px 18px',
+  borderRadius: 4,
+  border: `2px solid ${ARCADE.CSS_NEON_CYAN}`,
+  background: 'rgba(0,229,255,0.12)',
+  color: ARCADE.CSS_NEON_CYAN,
+  fontSize: 11,
   fontWeight: 600,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
   cursor: 'pointer',
+  boxShadow: `0 0 12px ${ARCADE.CSS_NEON_CYAN}`,
+  textShadow: ARCADE.GLOW_CYAN,
+  transition: 'all 0.15s ease',
+};
+
+const btnDisabled: React.CSSProperties = {
+  flex: 1,
+  padding: '12px 18px',
+  borderRadius: 4,
+  border: `2px solid rgba(155,142,196,0.3)`,
+  background: 'rgba(0,0,0,0.3)',
+  color: 'rgba(200,200,220,0.3)',
+  fontSize: 11,
+  fontWeight: 600,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
+  cursor: 'not-allowed',
 };
 
 const btnText: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#9b8ec4',
-  fontSize: 13,
+  color: ARCADE.CSS_NEON_YELLOW,
+  fontSize: 10,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
   cursor: 'pointer',
-  textDecoration: 'underline',
+  textShadow: ARCADE.GLOW_YELLOW,
+  animation: 'neon-flicker 4s infinite',
 };
 
 const codeDisplayStyle: React.CSSProperties = {
-  fontSize: 36,
+  fontSize: 32,
   fontWeight: 'bold',
-  color: '#4a3f6b',
-  letterSpacing: 8,
-  padding: '12px 24px',
-  background: '#f0e6f6',
-  borderRadius: 12,
-  fontFamily: 'monospace',
+  color: ARCADE.CSS_NEON_YELLOW,
+  letterSpacing: 10,
+  padding: '14px 24px',
+  background: 'rgba(0,0,0,0.5)',
+  border: `2px solid ${ARCADE.CSS_NEON_YELLOW}`,
+  borderRadius: 4,
+  fontFamily: ARCADE.PIXEL_FONT,
+  boxShadow: `0 0 18px ${ARCADE.CSS_NEON_YELLOW}, inset 0 0 10px rgba(255,210,63,0.2)`,
+  textShadow: ARCADE.GLOW_YELLOW,
+  cursor: 'pointer',
+  position: 'relative',
 };
 
 const playerRowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
-  padding: '8px 12px',
-  borderRadius: 8,
-  background: '#faf5ff',
-  marginBottom: 4,
-  fontSize: 14,
-  color: '#4a3f6b',
+  alignItems: 'center',
+  padding: '10px 14px',
+  borderRadius: 3,
+  background: 'rgba(0,229,255,0.06)',
+  border: `1px solid rgba(0,229,255,0.25)`,
+  marginBottom: 6,
+  fontSize: 13,
+  color: '#e0e0f0',
+};
+
+const voicePanelStyle: React.CSSProperties = {
+  margin: '16px 0',
+  padding: 12,
+  background: 'rgba(0,0,0,0.35)',
+  border: `1px solid rgba(0,229,255,0.3)`,
+  borderRadius: 4,
+};
+
+const sectionLabel: React.CSSProperties = {
+  color: ARCADE.CSS_NEON_CYAN,
+  fontSize: 9,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 2,
+  marginBottom: 8,
+  textAlign: 'left',
+  textShadow: ARCADE.GLOW_CYAN,
 };
 
 const errorStyle: React.CSSProperties = {
-  background: '#ffe0e0',
-  color: '#c44',
-  padding: '8px 16px',
-  borderRadius: 8,
-  fontSize: 13,
+  background: 'rgba(255,46,147,0.15)',
+  color: ARCADE.CSS_NEON_PINK,
+  border: `1px solid ${ARCADE.CSS_NEON_PINK}`,
+  padding: '10px 16px',
+  borderRadius: 3,
+  fontSize: 11,
+  fontFamily: ARCADE.PIXEL_FONT,
+  letterSpacing: 1,
   marginBottom: 12,
+  textShadow: ARCADE.GLOW_PINK,
 };

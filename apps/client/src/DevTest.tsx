@@ -1,48 +1,55 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL || 'http://localhost:3001';
 
 /**
- * DevTest page: simulates 4 players in a single browser window.
- * Each player is an iframe pointing to the main app with auto-join params.
- * Access via /devtest
+ * DevTest page: simulates N players in a single browser window.
+ *
+ * Flow:
+ *  1. User clicks "Start".
+ *  2. We mount N iframes. P1 (host=1) creates the room, then publishes the
+ *     room code over a BroadcastChannel. P2..PN listen on the channel and
+ *     join when they receive the code.
+ *  3. The DevTest harness itself also listens on the same channel so the
+ *     control bar can show the live room code for humans.
+ *
+ * This avoids the previous "controller creates a room that gets destroyed
+ * before iframes can join it" quirk.
  */
 export function DevTest() {
   const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
   const [playerCount, setPlayerCount] = useState(4);
-  const [autoCreated, setAutoCreated] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
   const addLog = (msg: string) => {
     setLogs(prev => [...prev.slice(-50), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
-  // Auto-create room via server API
-  const createRoom = async () => {
-    addLog('Creating room via Socket.IO...');
-    try {
-      const { io } = await import('socket.io-client');
-      const socket = io(SERVER_URL, { transports: ['websocket'] });
+  // Listen to BroadcastChannel for the host's room code so the control bar
+  // can display it as soon as P1's iframe creates the room.
+  useEffect(() => {
+    if (!started) return;
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('qwas-devtest-room');
+    const onMessage = (ev: MessageEvent) => {
+      if (ev?.data?.type === 'room-code' && typeof ev.data.code === 'string') {
+        if (!roomCode) {
+          setRoomCode(ev.data.code);
+          addLog('Received room code from P1: ' + ev.data.code);
+        }
+      }
+    };
+    channel.addEventListener('message', onMessage);
+    return () => {
+      channel.removeEventListener('message', onMessage);
+      channel.close();
+    };
+  }, [started, roomCode]);
 
-      socket.on('connect', () => {
-        addLog('Connected as host: ' + socket.id);
-        socket.emit('room:create', { playerName: 'P1-Host' });
-      });
-
-      socket.on('room:created', ({ code }: { code: string }) => {
-        addLog('Room created: ' + code);
-        setRoomCode(code);
-        setAutoCreated(true);
-        // Disconnect the setup socket — iframes will connect independently
-        socket.disconnect();
-      });
-
-      socket.on('connect_error', (err: any) => {
-        addLog('Connection error: ' + err.message);
-      });
-    } catch (e: any) {
-      addLog('Error: ' + e.message);
-    }
+  const startTest = () => {
+    addLog('Starting devtest with ' + playerCount + ' players...');
+    setStarted(true);
   };
 
   const gridCols = playerCount <= 2 ? 2 : 2;
@@ -67,13 +74,17 @@ export function DevTest() {
           <option value={4}>4 Players</option>
         </select>
 
-        {!roomCode ? (
-          <button onClick={createRoom} style={btnStyle}>
-            Create Room & Start
+        {!started ? (
+          <button onClick={startTest} style={btnStyle}>
+            Start {playerCount}-player Test
           </button>
-        ) : (
+        ) : roomCode ? (
           <span style={{ color: '#0f3460', background: '#e94560', padding: '4px 12px', borderRadius: 6, fontWeight: 700, fontFamily: 'monospace', fontSize: 16 }}>
             {roomCode}
+          </span>
+        ) : (
+          <span style={{ color: '#ffd23f', fontSize: 12, fontStyle: 'italic' }}>
+            waiting for P1 to create room...
           </span>
         )}
 
@@ -83,7 +94,7 @@ export function DevTest() {
       </div>
 
       {/* Player iframes */}
-      {roomCode ? (
+      {started ? (
         <div style={{
           flex: 1,
           display: 'grid',
@@ -104,7 +115,7 @@ export function DevTest() {
                 P{i + 1}{i === 0 ? ' (Host)' : ''}
               </div>
               <iframe
-                src={`/?devtest=1&room=${roomCode}&name=P${i + 1}&host=${i === 0 ? '1' : '0'}`}
+                src={`/?devtest=1&name=P${i + 1}&host=${i === 0 ? '1' : '0'}`}
                 style={{
                   width: '100%', height: '100%', border: 'none',
                   borderTop: `3px solid ${PLAYER_COLORS[i]}`,
@@ -123,10 +134,11 @@ export function DevTest() {
             Cooperative Claw Machine - Dev Test
           </div>
           <div style={{ color: '#a2a2a2', fontSize: 14 }}>
-            Click "Create Room & Start" to simulate {playerCount} players
+            Click "Start" to simulate {playerCount} players
           </div>
-          <div style={{ color: '#666', fontSize: 12, maxWidth: 500, textAlign: 'center' }}>
+          <div style={{ color: '#666', fontSize: 12, maxWidth: 520, textAlign: 'center' }}>
             Each player panel is an independent iframe with its own socket connection.
+            <br />P1 creates the room and broadcasts the code to siblings via BroadcastChannel.
             <br />P1 is the host (can grab with Space). All players have directional controls.
           </div>
         </div>
