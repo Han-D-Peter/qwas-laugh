@@ -1021,6 +1021,38 @@ export class GameEngine {
   /**
    * Apply authoritative server state for multiplayer rendering.
    * Replaces local simulation with server data.
+   *
+   * Server `GameState` field-by-field sync policy:
+   *
+   *   phase                - routing decision; inside the race guard below
+   *                          we DO NOT apply it (that's the whole point)
+   *   level, coins         - scalar HUD data, always safe to sync unconditionally
+   *   probabilityA, B      - sync-only-when-non-zero (pre-existing gate);
+   *                          prevents zero-broadcast from clobbering the
+   *                          probabilities we're actively displaying
+   *   maze                 - scene data; cached inside the race guard when
+   *                          state.phase === 'phase1' so the deferred rebuild
+   *                          picks up the new level seed
+   *   claw, doll, phase2   - scene data; dropped entirely during the guard
+   *                          window. The scene stays frozen mid-transition
+   *                          on the CURRENT level's sprites. That is the
+   *                          correct behavior: the user is watching a
+   *                          phase2→suspense→result cinematic and the
+   *                          racing phase1 positions belong to a level that
+   *                          hasn't visually started yet.
+   *   players              - NOT read by this function. App.tsx's onState
+   *                          handler updates React `players` state before
+   *                          calling applyServerState, so the HUD peer list
+   *                          continues to update even while the guard is
+   *                          dropping scene data here.
+   *   lastResult           - synced outside the guard, AND only when the
+   *                          server value is non-null. Rationale: during the
+   *                          guard window this.lastResult is the suspense
+   *                          verdict currently being animated — we must not
+   *                          let a racing state with `lastResult: null` (a
+   *                          fresh phase1 broadcast for the next level)
+   *                          clear it mid-popup. A non-null correction can
+   *                          still flow through once the guard lifts.
    */
   async applyServerState(state: import('@qwas/shared').GameState) {
     // Wait for PixiJS init to complete before rendering
@@ -1031,27 +1063,29 @@ export class GameEngine {
     this.level = state.level;
     this.coins = state.coins;
 
-    // Sync probabilities from server
+    // Sync probabilities from server (preserve current values on zero broadcast)
     if (state.probabilityA > 0) this.probabilityA = state.probabilityA;
     if (state.probabilityB > 0) this.probabilityB = state.probabilityB;
 
     // ─── Race guard for in-progress client-side transitions ─────────
     //
-    // The phase1→phase2 transition, phase2→suspense transition, and the
-    // suspense sequence itself are all driven by client-side setTimeout
-    // chains scheduled from earlier state updates. If the server races
-    // ahead and broadcasts the next state (e.g. phase='phase1' for the
-    // next level) BEFORE our scheduled setTimeout fires, a naive
-    // applyServerState will rebuild the phase1 scene and tear down the
-    // scheduled transition mid-flight. The user then sees:
+    // The phase1→phase2 transition, phase2→suspense transition, the
+    // suspense sequence, and the 3.5s result-popup display window are
+    // all driven by client-side setTimeout chains scheduled from earlier
+    // state updates. If the server races ahead and broadcasts the next
+    // state (e.g. phase='phase1' for the next level) BEFORE our scheduled
+    // setTimeout fires, a naive applyServerState would rebuild the
+    // phase1 scene and tear down the scheduled transition mid-flight.
+    // The user then sees:
     //   phase2 grab → phase1 scene → (2500ms later) suspense shake →
     //   result fx → phase1 again ("그냥 다시 시작")
     //
     // While we're in one of these client-locked transitional phases, we
-    // accept non-scene state (level, coins, maze cache for next build)
-    // but we DO NOT touch scene visibility, camera, or this.phase. When
-    // the local transition completes, the next applyServerState call
-    // picks up where we left off with the freshly-cached state.
+    // accept non-scene state (level, coins, cached maze for next build,
+    // non-null lastResult corrections) but we DO NOT touch scene
+    // visibility, camera, or this.phase. When the local transition
+    // completes, the next applyServerState call picks up where we left
+    // off with the freshly-cached state.
     const inScheduledTransition =
       this.phase === 'phase1_to_phase2' ||
       this.phase === 'phase2_to_suspense' ||
@@ -1063,11 +1097,19 @@ export class GameEngine {
       if (state.phase === 'phase1' && state.maze) {
         this.maze = state.maze;
       }
+      // Allow non-null lastResult corrections to flow through (e.g. a
+      // late server broadcast that flips 'success' → 'fail' or vice
+      // versa). Null broadcasts are dropped — see policy note above.
+      if (state.lastResult) {
+        this.lastResult = state.lastResult;
+      }
       this.updateInfo();
       return;
     }
 
     // Outside of scheduled transitions, lastResult mirrors the server.
+    // Null is allowed here — it means the new phase1 level is legitimately
+    // starting and the previous result should clear.
     this.lastResult = state.lastResult;
 
     // Phase 1 rendering from server state
