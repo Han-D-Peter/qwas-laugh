@@ -87,6 +87,14 @@ export class GameEngine {
   private suspensePhase = '';
   private seed = 0;
   private grabLocked = false;
+  /**
+   * True once the player has committed a successful Phase 1 grab. Blocks
+   * any further user-initiated grab attempts until the next level starts.
+   * Prevents the rapid-double-click bug where a second space press after
+   * a successful Phase 1 grab triggers an early Phase 2 manual grab at
+   * the top of the descent path, causing an instant fail.
+   */
+  private phase1GrabCommitted = false;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
   /**
    * When true, the engine only renders server state (no local simulation or input).
@@ -181,6 +189,7 @@ export class GameEngine {
     this.suspenseProgress = 0;
     this.suspensePhase = '';
     this.grabLocked = false;
+    this.phase1GrabCommitted = false;
     this.updateInfo();
 
     // CRT power-on + camera zoom entry animation
@@ -244,7 +253,10 @@ export class GameEngine {
           case 'ArrowLeft':  this.clawDir = diag ? { x: -d, y: d }  : { x: -1, y: 0 }; e.preventDefault(); break;
           case 'ArrowRight': this.clawDir = diag ? { x: d, y: -d }  : { x: 1, y: 0 };  e.preventDefault(); break;
           case ' ':
-            if (!this.grabLocked) { this.grabLocked = true; this.attemptPhase1Grab(); }
+            if (!this.grabLocked && !this.phase1GrabCommitted) {
+              this.grabLocked = true;
+              this.attemptPhase1Grab();
+            }
             e.preventDefault(); break;
         }
       }
@@ -255,7 +267,15 @@ export class GameEngine {
           case 'ArrowLeft':  this.p2ClawX -= 6; e.preventDefault(); break;
           case 'ArrowRight': this.p2ClawX += 6; e.preventDefault(); break;
           case ' ':
-            if (!this.grabLocked) { this.grabLocked = true; this.attemptPhase2Grab(); }
+            // After a committed Phase 1 grab, manual Phase 2 grab is
+            // disabled — the automatic grab at the bottom of the descent
+            // path still runs via updatePhase2(). This prevents a rapid
+            // Phase 1 double-click from bleeding into an early Phase 2
+            // manual grab once the countdown finishes.
+            if (!this.grabLocked && !this.phase1GrabCommitted) {
+              this.grabLocked = true;
+              this.attemptPhase2Grab();
+            }
             e.preventDefault(); break;
         }
       }
@@ -298,6 +318,10 @@ export class GameEngine {
       this.resetPhase1();
     } else {
       this.probabilityA = overlap;
+      // Lock out any further user-initiated grabs until the next level.
+      // A second rapid press would otherwise land on the Phase 2 manual
+      // grab handler as soon as the countdown finishes.
+      this.phase1GrabCommitted = true;
       this.transitionToPhase2();
     }
     this.updateInfo();
@@ -935,6 +959,10 @@ export class GameEngine {
   /** Handle grab input from touch controls (local mode) */
   handleGrab() {
     if (this.destroyed || this.remoteMode || this.grabLocked) return;
+    // Once Phase 1 has been committed, ignore further user-initiated
+    // grabs for the rest of this level (Phase 2 still auto-grabs at the
+    // bottom of the descent via updatePhase2()).
+    if (this.phase1GrabCommitted) return;
 
     if (this.phase === 'phase1') {
       this.grabLocked = true;
