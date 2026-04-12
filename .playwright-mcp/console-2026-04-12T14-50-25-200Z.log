@@ -1,0 +1,5 @@
+[     124ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     147ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3001/:0
+[   19378ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3001/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.setupLevel (http://localhost:3001/src/game/engine.ts?t=1776005336305:150:22)
+    at GameEngine.init (http://localhost:3001/src/game/engine.ts?t=1776005336305:126:12) @ http://localhost:3001/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418

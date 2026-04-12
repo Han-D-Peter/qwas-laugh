@@ -1,0 +1,71 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: DEV TEST
+    - combobox [ref=e6]:
+      - option "2 Players"
+      - option "3 Players"
+      - option "4 Players" [selected]
+    - generic [ref=e14]: waiting for P1 to create room...
+    - generic [ref=e8]: "Server: http://localhost:3001"
+  - generic [ref=e9]:
+    - generic [ref=e15]:
+      - generic [ref=e16]: P1 (Host)
+      - iframe [ref=e17]:
+        - generic [ref=f1e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f1e7]
+          - generic [ref=f1e8]: 협동 인형뽑기
+          - paragraph [ref=f1e9]: 4-PLAYER CO-OP GAME
+          - generic [ref=f1e10]:
+            - generic [ref=f1e11]: ROOM CODE
+            - generic "Click to copy" [ref=f1e12] [cursor=pointer]:
+              - text: UH6E
+              - generic [ref=f1e13]: 📋
+          - generic [ref=f1e14]:
+            - generic [ref=f1e15]: PLAYERS (1/4)
+            - generic [ref=f1e16]:
+              - generic [ref=f1e17]: P1
+              - generic [ref=f1e18]: UP *HOST
+            - generic [ref=f1e19]: WAITING...
+            - generic [ref=f1e20]: WAITING...
+            - generic [ref=f1e21]: WAITING...
+          - generic [ref=f1e23]:
+            - generic [ref=f1e24]: 음성채팅
+            - button "음성채팅 켜기" [ref=f1e25] [cursor=pointer]
+          - button "START GAME" [ref=f1e26] [cursor=pointer]
+    - generic [ref=e18]:
+      - generic [ref=e19]: P2
+      - iframe [ref=e20]:
+        - generic [ref=f2e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f2e7]
+          - generic [ref=f2e8]: 협동 인형뽑기
+          - paragraph [ref=f2e9]: 4-PLAYER CO-OP GAME
+          - textbox "NICKNAME" [ref=f2e10]
+          - generic [ref=f2e11]:
+            - button "CREATE" [disabled] [ref=f2e12]
+            - button "JOIN" [disabled] [ref=f2e13]
+          - button ">> LOCAL SOLO PLAY <<" [ref=f2e14] [cursor=pointer]
+    - generic [ref=e21]:
+      - generic [ref=e22]: P3
+      - iframe [ref=e23]:
+        - generic [ref=f3e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f3e7]
+          - generic [ref=f3e8]: 협동 인형뽑기
+          - paragraph [ref=f3e9]: 4-PLAYER CO-OP GAME
+          - textbox "NICKNAME" [ref=f3e10]
+          - generic [ref=f3e11]:
+            - button "CREATE" [disabled] [ref=f3e12]
+            - button "JOIN" [disabled] [ref=f3e13]
+          - button ">> LOCAL SOLO PLAY <<" [ref=f3e14] [cursor=pointer]
+    - generic [ref=e24]:
+      - generic [ref=e25]: P4
+      - iframe [ref=e26]:
+        - generic [ref=f4e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f4e7]
+          - generic [ref=f4e8]: 협동 인형뽑기
+          - paragraph [ref=f4e9]: 4-PLAYER CO-OP GAME
+          - textbox "NICKNAME" [ref=f4e10]
+          - generic [ref=f4e11]:
+            - button "CREATE" [disabled] [ref=f4e12]
+            - button "JOIN" [disabled] [ref=f4e13]
+          - button ">> LOCAL SOLO PLAY <<" [ref=f4e14] [cursor=pointer]
+  - generic [ref=e27]: "[6:01:54 PM] Starting devtest with 4 players..."

@@ -1,0 +1,21 @@
+- generic [ref=e15]:
+  - generic:
+    - generic: GO!!
+  - generic:
+    - generic: LV 01
+    - generic: PHASE 1 MAZE
+    - generic: COIN 00
+  - generic [ref=e18]:
+    - generic [ref=e19]: CONTROLS
+    - generic [ref=e20]:
+      - generic [ref=e21]: ↑
+      - generic [ref=e22]: ↓
+      - generic [ref=e23]: ←
+      - generic [ref=e24]: →
+      - text: MOVE
+    - generic [ref=e25]:
+      - generic [ref=e26]: SPACE
+      - text: GRAB
+    - generic [ref=e27]:
+      - generic [ref=e28]: R
+      - text: RESTART

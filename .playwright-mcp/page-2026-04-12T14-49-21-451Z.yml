@@ -1,0 +1,58 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: PHASE TRANSITION TEST HARNESS
+    - button "RUNNING..." [disabled] [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]: PASS 0
+      - generic [ref=e24]: FAIL 0
+      - generic [ref=e25]: TOTAL 12
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e27]:
+        - generic [ref=e28]: ◌ L1
+        - generic [ref=e29]: "Local: successful Phase 1 grab → phase1_to_phase2 → suspense → result"
+      - generic [ref=e31]:
+        - generic [ref=e32]: · L2
+        - generic [ref=e33]: "Local: failed Phase 1 grab (overlap < 10%) returns to phase1 cleanly"
+      - generic [ref=e35]:
+        - generic [ref=e36]: · L3
+        - generic [ref=e37]: "Local: rapid double-grab guard blocks second press"
+      - generic [ref=e39]:
+        - generic [ref=e40]: · L4
+        - generic [ref=e41]: "Local: 3 consecutive Phase 1 grabs progress through suspense each time"
+      - generic [ref=e43]:
+        - generic [ref=e44]: · L5
+        - generic [ref=e45]: "Local: probabilityB is set to 1.0 after a successful grab (Phase 2 removed)"
+      - generic [ref=e47]:
+        - generic [ref=e48]: · R1
+        - generic [ref=e49]: "Remote: server result broadcast triggers suspense from phase1"
+      - generic [ref=e51]:
+        - generic [ref=e52]: · R2
+        - generic [ref=e53]: "Remote: race guard blocks phase1 broadcasts during phase2_to_suspense"
+      - generic [ref=e55]:
+        - generic [ref=e56]: · R3
+        - generic [ref=e57]: "Remote: race guard blocks phase1 broadcasts during suspense"
+      - generic [ref=e59]:
+        - generic [ref=e60]: · R4
+        - generic [ref=e61]: "Remote: NEW level phase1 broadcast (different seed) DOES rebuild"
+      - generic [ref=e63]:
+        - generic [ref=e64]: · R5
+        - generic [ref=e65]: "Remote: result lock holds for 3.5s then releases"
+      - generic [ref=e67]:
+        - generic [ref=e68]: · R6
+        - generic [ref=e69]: "Remote: legacy state.phase=phase2 broadcast is silently ignored"
+      - generic [ref=e71]:
+        - generic [ref=e72]: · R7
+        - generic [ref=e73]: "Remote: stress test — 20 cycles of phase1 grab → result"
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: ENGINE STATE
+        - generic [ref=e18]:
+          - text: "phase: suspense"
+          - text: "level: 1, coins: 0"
+          - text: "probA: 100%, probB: 100%"
+          - text: "lastResult: null"
+          - text: "overlapPercent: 100.0%"
+          - text: "introSplash: null"
+      - generic [ref=e19]: RUN LOG
+      - generic [ref=e20]: "[11:49:17 PM] ▶ L1 Local: successful Phase 1 grab → phase1_to_phase2 → suspense → result"

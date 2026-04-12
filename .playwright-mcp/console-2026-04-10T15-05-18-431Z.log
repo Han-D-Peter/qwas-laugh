@@ -1,0 +1,13 @@
+[      98ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     123ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3000/test:0
+[     145ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.setupLevel (http://localhost:3000/src/game/engine.ts:150:22)
+    at GameEngine.init (http://localhost:3000/src/game/engine.ts:126:12) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[    6490ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   14491ms] [LOG] [grab] claw={"x":720,"y":120} doll={"x":520,"y":120} overlap=0% dist=200 @ http://localhost:3000/src/game/engine.ts:280
+[   14744ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   14996ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   16733ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   18469ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   20361ms] [LOG] [grab] claw={"x":520,"y":120} doll={"x":520,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:280
+[   25784ms] [WARNING] [engine] Received legacy state.phase=phase2 — Phase 2 was removed. Ignoring. @ http://localhost:3000/src/game/engine.ts:984

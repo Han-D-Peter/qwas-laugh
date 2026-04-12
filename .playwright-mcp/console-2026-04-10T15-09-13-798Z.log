@@ -1,0 +1,13 @@
+[      96ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     117ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3000/test:0
+[     136ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.setupLevel (http://localhost:3000/src/game/engine.ts?t=1775833718394:150:22)
+    at GameEngine.init (http://localhost:3000/src/game/engine.ts?t=1775833718394:126:12) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[    4251ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   12254ms] [LOG] [grab] claw={"x":720,"y":440} doll={"x":520,"y":440} overlap=0% dist=200 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   12508ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   12762ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   14502ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   16249ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   18151ms] [LOG] [grab] claw={"x":520,"y":440} doll={"x":520,"y":440} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts?t=1775833718394:280
+[   29159ms] [WARNING] [engine] Received legacy state.phase=phase2 — Phase 2 was removed. Ignoring. @ http://localhost:3000/src/game/engine.ts?t=1775833718394:989

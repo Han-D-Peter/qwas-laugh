@@ -1,0 +1,6 @@
+- generic [ref=e5]:
+  - heading "CLAW MACHINE" [level=1] [ref=e6]
+  - generic [ref=e7]: 협동 인형뽑기
+  - paragraph [ref=e8]: 4-PLAYER CO-OP GAME
+  - textbox "ROOM CODE (4)" [ref=e15]
+  - button "ENTER" [disabled] [ref=e16]

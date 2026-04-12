@@ -1,0 +1,21 @@
+- generic [ref=e15]:
+  - generic:
+    - generic: GO!!
+  - generic:
+    - generic: LV 01
+    - generic: PHASE 1 MAZE
+    - generic: COIN 00
+  - generic [ref=e19]:
+    - button "위" [ref=e20] [cursor=pointer]:
+      - img [ref=e21]
+      - generic [ref=e23]: 위
+    - button "좌" [ref=e24] [cursor=pointer]:
+      - img [ref=e25]
+      - generic [ref=e27]: 좌
+    - button "집기" [ref=e28] [cursor=pointer]
+    - button "우" [ref=e29] [cursor=pointer]:
+      - img [ref=e30]
+      - generic [ref=e32]: 우
+    - button "아래" [ref=e33] [cursor=pointer]:
+      - img [ref=e34]
+      - generic [ref=e36]: 아래

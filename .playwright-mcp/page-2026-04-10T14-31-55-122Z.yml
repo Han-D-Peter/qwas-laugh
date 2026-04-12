@@ -1,0 +1,26 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: PHASE TRANSITION TEST HARNESS
+    - button "RUN ALL TESTS" [ref=e6] [cursor=pointer]
+  - generic [ref=e7]:
+    - generic [ref=e9]:
+      - text: Click "RUN ALL TESTS" to verify Phase 1 → Phase 2 transitions in both local and remote modes.
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - strong [ref=e12]: L1–L4
+          - text: ": Local-mode tests (deterministic, no server)"
+        - listitem [ref=e13]:
+          - strong [ref=e14]: R1–R7
+          - text: ": Remote-mode tests (synthetic GameState injection)"
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: ENGINE STATE
+        - generic [ref=e18]:
+          - text: "phase: phase1"
+          - text: "level: 1, coins: 0"
+          - text: "probA: 0%, probB: 0%"
+          - text: "lastResult: null"
+          - text: "overlapPercent: 0.0%"
+          - text: "introSplash: null"
+      - generic [ref=e19]: RUN LOG
+      - generic [ref=e20]: (no run yet)

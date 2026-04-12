@@ -1,0 +1,133 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: DEV TEST
+    - combobox [ref=e6]:
+      - option "2 Players"
+      - option "3 Players"
+      - option "4 Players" [selected]
+    - generic [ref=e14]: MRRL
+    - generic [ref=e8]: "Server: http://localhost:3001"
+  - generic [ref=e9]:
+    - generic [ref=e15]:
+      - generic [ref=e16]: P1 (Host)
+      - iframe [ref=e17]:
+        - generic [ref=f5e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f5e7]
+          - generic [ref=f5e8]: 협동 인형뽑기
+          - paragraph [ref=f5e9]: 4-PLAYER CO-OP GAME
+          - generic [ref=f5e10]:
+            - generic [ref=f5e11]: ROOM CODE
+            - generic "Click to copy" [ref=f5e12] [cursor=pointer]:
+              - text: MRRL
+              - generic [ref=f5e13]: 📋
+          - generic [ref=f5e14]:
+            - generic [ref=f5e15]: PLAYERS (4/4)
+            - generic [ref=f5e16]:
+              - generic [ref=f5e17]: P1
+              - generic [ref=f5e18]: UP *HOST
+            - generic [ref=f5e19]:
+              - generic [ref=f5e20]: P4
+              - generic [ref=f5e21]: DOWN
+            - generic [ref=f5e22]:
+              - generic [ref=f5e23]: P3
+              - generic [ref=f5e24]: LEFT
+            - generic [ref=f5e25]:
+              - generic [ref=f5e26]: P2
+              - generic [ref=f5e27]: RIGHT
+          - generic [ref=f5e29]:
+            - generic [ref=f5e30]: 음성채팅
+            - button "음성채팅 켜기" [ref=f5e31] [cursor=pointer]
+          - button "START GAME" [ref=f5e32] [cursor=pointer]
+    - generic [ref=e18]:
+      - generic [ref=e19]: P2
+      - iframe [ref=e20]:
+        - generic [ref=f6e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f6e7]
+          - generic [ref=f6e8]: 협동 인형뽑기
+          - paragraph [ref=f6e9]: 4-PLAYER CO-OP GAME
+          - generic [ref=f6e10]:
+            - generic [ref=f6e11]: ROOM CODE
+            - generic "Click to copy" [ref=f6e12] [cursor=pointer]:
+              - text: MRRL
+              - generic [ref=f6e13]: 📋
+          - generic [ref=f6e14]:
+            - generic [ref=f6e15]: PLAYERS (4/4)
+            - generic [ref=f6e16]:
+              - generic [ref=f6e17]: P1
+              - generic [ref=f6e18]: UP *HOST
+            - generic [ref=f6e19]:
+              - generic [ref=f6e20]: P4
+              - generic [ref=f6e21]: DOWN
+            - generic [ref=f6e22]:
+              - generic [ref=f6e23]: P3
+              - generic [ref=f6e24]: LEFT
+            - generic [ref=f6e25]:
+              - generic [ref=f6e26]: P2
+              - generic [ref=f6e27]: RIGHT
+          - generic [ref=f6e29]:
+            - generic [ref=f6e30]: 음성채팅
+            - button "음성채팅 켜기" [ref=f6e31] [cursor=pointer]
+          - paragraph [ref=f6e32]: WAITING FOR HOST...
+    - generic [ref=e21]:
+      - generic [ref=e22]: P3
+      - iframe [ref=e23]:
+        - generic [ref=f7e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f7e7]
+          - generic [ref=f7e8]: 협동 인형뽑기
+          - paragraph [ref=f7e9]: 4-PLAYER CO-OP GAME
+          - generic [ref=f7e10]:
+            - generic [ref=f7e11]: ROOM CODE
+            - generic "Click to copy" [ref=f7e12] [cursor=pointer]:
+              - text: MRRL
+              - generic [ref=f7e13]: 📋
+          - generic [ref=f7e14]:
+            - generic [ref=f7e15]: PLAYERS (4/4)
+            - generic [ref=f7e16]:
+              - generic [ref=f7e17]: P1
+              - generic [ref=f7e18]: UP *HOST
+            - generic [ref=f7e19]:
+              - generic [ref=f7e20]: P4
+              - generic [ref=f7e21]: DOWN
+            - generic [ref=f7e22]:
+              - generic [ref=f7e23]: P3
+              - generic [ref=f7e24]: LEFT
+            - generic [ref=f7e25]:
+              - generic [ref=f7e26]: P2
+              - generic [ref=f7e27]: RIGHT
+          - generic [ref=f7e29]:
+            - generic [ref=f7e30]: 음성채팅
+            - button "음성채팅 켜기" [ref=f7e31] [cursor=pointer]
+          - paragraph [ref=f7e32]: WAITING FOR HOST...
+    - generic [ref=e24]:
+      - generic [ref=e25]: P4
+      - iframe [ref=e26]:
+        - generic [ref=f8e6]:
+          - heading "CLAW MACHINE" [level=1] [ref=f8e7]
+          - generic [ref=f8e8]: 협동 인형뽑기
+          - paragraph [ref=f8e9]: 4-PLAYER CO-OP GAME
+          - generic [ref=f8e10]:
+            - generic [ref=f8e11]: ROOM CODE
+            - generic "Click to copy" [ref=f8e12] [cursor=pointer]:
+              - text: MRRL
+              - generic [ref=f8e13]: 📋
+          - generic [ref=f8e14]:
+            - generic [ref=f8e15]: PLAYERS (4/4)
+            - generic [ref=f8e16]:
+              - generic [ref=f8e17]: P1
+              - generic [ref=f8e18]: UP *HOST
+            - generic [ref=f8e19]:
+              - generic [ref=f8e20]: P4
+              - generic [ref=f8e21]: DOWN
+            - generic [ref=f8e22]:
+              - generic [ref=f8e23]: P3
+              - generic [ref=f8e24]: LEFT
+            - generic [ref=f8e25]:
+              - generic [ref=f8e26]: P2
+              - generic [ref=f8e27]: RIGHT
+          - generic [ref=f8e29]:
+            - generic [ref=f8e30]: 음성채팅
+            - button "음성채팅 켜기" [ref=f8e31] [cursor=pointer]
+          - paragraph [ref=f8e32]: WAITING FOR HOST...
+  - generic [ref=e13]:
+    - generic [ref=e27]: "[6:04:06 PM] Starting devtest with 4 players..."
+    - generic [ref=e28]: "[6:04:06 PM] Received room code from P1: MRRL"

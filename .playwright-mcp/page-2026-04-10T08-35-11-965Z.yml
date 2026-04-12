@@ -1,0 +1,21 @@
+- generic [ref=e6]:
+  - heading "CLAW MACHINE" [level=1] [ref=e7]
+  - generic [ref=e8]: 협동 인형뽑기
+  - paragraph [ref=e9]: 4-PLAYER CO-OP GAME
+  - generic [ref=e15]:
+    - generic [ref=e16]: ROOM CODE
+    - generic "Click to copy" [ref=e17] [cursor=pointer]:
+      - text: EBLP
+      - generic [ref=e18]: 📋
+  - generic [ref=e19]:
+    - generic [ref=e20]: PLAYERS (1/4)
+    - generic [ref=e21]:
+      - generic [ref=e22]: P1
+      - generic [ref=e23]: UP *HOST
+    - generic [ref=e24]: WAITING...
+    - generic [ref=e25]: WAITING...
+    - generic [ref=e26]: WAITING...
+  - generic [ref=e28]:
+    - generic [ref=e29]: 음성채팅
+    - button "음성채팅 켜기" [ref=e30] [cursor=pointer]
+  - button "START GAME" [ref=e31] [cursor=pointer]

@@ -1,0 +1,15 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: DEV TEST
+    - combobox [ref=e6]:
+      - option "2 Players"
+      - option "3 Players"
+      - option "4 Players" [selected]
+    - button "Create Room & Start" [ref=e7] [cursor=pointer]
+    - generic [ref=e8]: "Server: http://localhost:3001"
+  - generic [ref=e9]:
+    - generic [ref=e10]: Cooperative Claw Machine - Dev Test
+    - generic [ref=e11]: Click "Create Room & Start" to simulate 4 players
+    - generic [ref=e12]:
+      - text: Each player panel is an independent iframe with its own socket connection.
+      - text: P1 is the host (can grab with Space). All players have directional controls.

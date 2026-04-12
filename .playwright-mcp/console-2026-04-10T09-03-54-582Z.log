@@ -1,0 +1,14 @@
+[     128ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     151ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3000/devtest:0
+[   64598ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.applyServerState (http://localhost:3000/src/game/engine.ts:846:26) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[   64628ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.applyServerState (http://localhost:3000/src/game/engine.ts:846:26) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[   64647ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.applyServerState (http://localhost:3000/src/game/engine.ts:846:26) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[   64661ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.applyServerState (http://localhost:3000/src/game/engine.ts:846:26) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[   94515ms] [LOG] [grab-server] overlap=0% serverClaw={"x":280,"y":280} serverDoll={"x":520,"y":520} clientClaw={"x":280,"y":280} clientDoll={"x":520,"y":520} @ http://localhost:3000/src/game/engine.ts:817
+[   94515ms] [LOG] [grab-server] overlap=0% serverClaw={"x":280,"y":280} serverDoll={"x":520,"y":520} clientClaw={"x":280,"y":280} clientDoll={"x":520,"y":520} @ http://localhost:3000/src/game/engine.ts:817
+[   94516ms] [LOG] [grab-server] overlap=0% serverClaw={"x":280,"y":280} serverDoll={"x":520,"y":520} clientClaw={"x":280,"y":280} clientDoll={"x":520,"y":520} @ http://localhost:3000/src/game/engine.ts:817
+[   94516ms] [LOG] [grab-server] overlap=0% serverClaw={"x":280,"y":280} serverDoll={"x":520,"y":520} clientClaw={"x":280,"y":280} clientDoll={"x":520,"y":520} @ http://localhost:3000/src/game/engine.ts:817

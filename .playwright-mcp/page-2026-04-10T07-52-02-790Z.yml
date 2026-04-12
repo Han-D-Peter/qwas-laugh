@@ -1,0 +1,9 @@
+- generic [ref=e5]:
+  - heading "CLAW MACHINE" [level=1] [ref=e6]
+  - generic [ref=e7]: 협동 인형뽑기
+  - paragraph [ref=e8]: 4-PLAYER CO-OP GAME
+  - textbox "NICKNAME" [ref=e9]
+  - generic [ref=e10]:
+    - button "CREATE" [disabled] [ref=e11]
+    - button "JOIN" [disabled] [ref=e12]
+  - button ">> LOCAL SOLO PLAY <<" [ref=e13] [cursor=pointer]

@@ -1,0 +1,13 @@
+[     103ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     140ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3001/test:0
+[     165ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3001/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.setupLevel (http://localhost:3001/src/game/engine.ts?t=1776005336305:150:22)
+    at GameEngine.init (http://localhost:3001/src/game/engine.ts?t=1776005336305:126:12) @ http://localhost:3001/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[    6962ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   14953ms] [LOG] [grab] claw={"x":560,"y":40} doll={"x":360,"y":40} overlap=0% dist=200 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   15207ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   15459ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   17196ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   18940ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   20830ms] [LOG] [grab] claw={"x":360,"y":40} doll={"x":360,"y":40} overlap=100% dist=0 @ http://localhost:3001/src/game/engine.ts?t=1776005336305:280
+[   31836ms] [WARNING] [engine] Received legacy state.phase=phase2 — Phase 2 was removed. Ignoring. @ http://localhost:3001/src/game/engine.ts?t=1776005336305:991

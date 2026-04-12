@@ -1,0 +1,12 @@
+[     673ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[    1241ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3000/test:0
+[    1243ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/favicon.ico:0
+[    1266ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.setupLevel (http://localhost:3000/src/game/engine.ts:141:22)
+    at GameEngine.init (http://localhost:3000/src/game/engine.ts:117:12) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[   45123ms] [LOG] [grab] claw={"x":280,"y":120} doll={"x":280,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:270
+[   50400ms] [LOG] [grab] claw={"x":480,"y":120} doll={"x":280,"y":120} overlap=0% dist=200 @ http://localhost:3000/src/game/engine.ts:270
+[   50653ms] [LOG] [grab] claw={"x":280,"y":120} doll={"x":280,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:270
+[   50905ms] [LOG] [grab] claw={"x":280,"y":120} doll={"x":280,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:270
+[   52797ms] [LOG] [grab] claw={"x":280,"y":120} doll={"x":280,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:270
+[   53054ms] [LOG] [grab] claw={"x":280,"y":120} doll={"x":280,"y":120} overlap=100% dist=0 @ http://localhost:3000/src/game/engine.ts:270

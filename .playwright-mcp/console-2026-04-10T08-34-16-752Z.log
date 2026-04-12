@@ -1,0 +1,11 @@
+[     118ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=96682bfb:20102
+[     143ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ http://localhost:3000/:0
+[   96418ms] [WARNING]     at Phase1Scene.buildMaze (http://localhost:3000/src/game/phase1/Phase1Scene.ts:138:21)
+    at GameEngine.applyServerState (http://localhost:3000/src/game/engine.ts:846:26)
+    at GameSocket.onStateUpdate (http://localhost:3000/src/App.tsx:176:26)
+    at Socket2.<anonymous> (http://localhost:3000/src/network/socket.ts:63:27)
+    at Emitter.emit (http://localhost:3000/node_modules/.vite/deps/socket__io-client.js?v=96682bfb:819:20)
+    at Socket2.emitEvent (http://localhost:3000/node_modules/.vite/deps/socket__io-client.js?v=96682bfb:3165:16)
+    at Socket2.onevent (http://localhost:3000/node_modules/.vite/deps/socket__io-client.js?v=96682bfb:3153:12)
+    at Socket2.onpacket (http://localhost:3000/node_modules/.vite/deps/socket__io-client.js?v=96682bfb:3124:14) @ http://localhost:3000/node_modules/.vite/deps/chunk-H4FHJWQN.js?v=96682bfb:2418
+[  221229ms] [LOG] [grab-server] overlap=0% serverClaw={"x":280,"y":280} serverDoll={"x":520,"y":440} clientClaw={"x":280,"y":280} clientDoll={"x":520,"y":440} @ http://localhost:3000/src/game/engine.ts:817

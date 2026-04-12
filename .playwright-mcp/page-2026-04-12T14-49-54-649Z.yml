@@ -1,0 +1,82 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: PHASE TRANSITION TEST HARNESS
+    - button "RUN ALL TESTS" [ref=e74] [cursor=pointer]
+    - generic [ref=e22]:
+      - generic [ref=e23]: PASS 12
+      - generic [ref=e24]: FAIL 0
+      - generic [ref=e25]: TOTAL 12
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: ✓ L1
+          - generic [ref=e29]: "Local: successful Phase 1 grab → phase1_to_phase2 → suspense → result"
+        - generic: phase1 → phase1_to_phase2 → suspense → result (lastResult=success)
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: ✓ L2
+          - generic [ref=e33]: "Local: failed Phase 1 grab (overlap < 10%) returns to phase1 cleanly"
+        - generic: Failed grab cleanly reset (coins 0→1)
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: ✓ L3
+          - generic [ref=e37]: "Local: rapid double-grab guard blocks second press"
+        - generic: Second rapid grab press correctly ignored
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]: ✓ L4
+          - generic [ref=e41]: "Local: 3 consecutive Phase 1 grabs progress through suspense each time"
+        - generic: 3/3 cycles reached suspense without state leakage
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]: ✓ L5
+          - generic [ref=e45]: "Local: probabilityB is set to 1.0 after a successful grab (Phase 2 removed)"
+        - generic: probB=1.0, finalProb=probA=1
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: ✓ R1
+          - generic [ref=e49]: "Remote: server result broadcast triggers suspense from phase1"
+        - generic: Remote phase1 → suspense → result completed (lastResult=success)
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e52]: ✓ R2
+          - generic [ref=e53]: "Remote: race guard blocks phase1 broadcasts during phase2_to_suspense"
+        - generic: "Race guard held: phase stayed 'phase2_to_suspense' across 5 racing phase1 broadcasts"
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]: ✓ R3
+          - generic [ref=e57]: "Remote: race guard blocks phase1 broadcasts during suspense"
+        - generic: Phase stayed in suspense/result across 10 racing phase1 broadcasts
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]: ✓ R4
+          - generic [ref=e61]: "Remote: NEW level phase1 broadcast (different seed) DOES rebuild"
+        - generic: Real new-level broadcast triggered scene rebuild (seed 1776005350824→1776006350823)
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: ✓ R5
+          - generic [ref=e65]: "Remote: result lock holds for 3.5s then releases"
+        - generic: Result lock correctly held then released
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]: ✓ R6
+          - generic [ref=e69]: "Remote: legacy state.phase=phase2 broadcast is silently ignored"
+        - generic: Legacy phase2 broadcast silently ignored (phase stayed 'phase1')
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - generic [ref=e72]: ✓ R7
+          - generic [ref=e73]: "Remote: stress test — 20 cycles of phase1 grab → result"
+        - generic: 20/20 cycles passed without stuck states
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]: ENGINE STATE
+        - generic [ref=e18]:
+          - text: "phase: result"
+          - text: "level: 1, coins: 0"
+          - text: "probA: 50%, probB: 100%"
+          - text: "lastResult: success"
+          - text: "overlapPercent: 50.0%"
+          - text: "introSplash: null"
+      - generic [ref=e19]: RUN LOG
+      - generic [ref=e20]: "[11:49:17 PM] ▶ L1 Local: successful Phase 1 grab → phase1_to_phase2 → suspense → result [11:49:25 PM] ✓ L1 phase1 → phase1_to_phase2 → suspense → result (lastResult=success) [11:49:25 PM] ▶ L2 Local: failed Phase 1 grab (overlap < 10%) returns to phase1 cleanly [11:49:25 PM] ✓ L2 Failed grab cleanly reset (coins 0→1) [11:49:25 PM] ▶ L3 Local: rapid double-grab guard blocks second press [11:49:25 PM] ✓ L3 Second rapid grab press correctly ignored [11:49:26 PM] ▶ L4 Local: 3 consecutive Phase 1 grabs progress through suspense each time [11:49:31 PM] ✓ L4 3/3 cycles reached suspense without state leakage [11:49:31 PM] ▶ L5 Local: probabilityB is set to 1.0 after a successful grab (Phase 2 removed) [11:49:31 PM] ✓ L5 probB=1.0, finalProb=probA=1 [11:49:31 PM] ▶ R1 Remote: server result broadcast triggers suspense from phase1 [11:49:39 PM] ✓ R1 Remote phase1 → suspense → result completed (lastResult=success) [11:49:39 PM] ▶ R2 Remote: race guard blocks phase1 broadcasts during phase2_to_suspense [11:49:39 PM] ✓ R2 Race guard held: phase stayed 'phase2_to_suspense' across 5 racing phase1 broadcasts [11:49:39 PM] ▶ R3 Remote: race guard blocks phase1 broadcasts during suspense [11:49:42 PM] ✓ R3 Phase stayed in suspense/result across 10 racing phase1 broadcasts [11:49:42 PM] ▶ R4 Remote: NEW level phase1 broadcast (different seed) DOES rebuild [11:49:42 PM] ✓ R4 Real new-level broadcast triggered scene rebuild (seed 1776005350824→1776006350823) [11:49:42 PM] ▶ R5 Remote: result lock holds for 3.5s then releases [11:49:42 PM] ✓ R5 Result lock correctly held then released [11:49:42 PM] ▶ R6 Remote: legacy state.phase=phase2 broadcast is silently ignored [11:49:42 PM] ✓ R6 Legacy phase2 broadcast silently ignored (phase stayed 'phase1') [11:49:42 PM] ▶ R7 Remote: stress test — 20 cycles of phase1 grab → result [11:49:43 PM] ✓ R7 20/20 cycles passed without stuck states [11:49:43 PM] ━━━ all tests complete ━━━"
