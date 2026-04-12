@@ -1056,12 +1056,16 @@ export class GameEngine {
         ' clientDoll=' + JSON.stringify(this.dollPos));
     }
     if (phase === 'phase1') {
-      this.probabilityA = overlapPercent / 100;
-      // Phase 2 was removed — set probB = 1.0 so the existing
-      // probA * probB suspense math correctly evaluates to probA.
-      this.probabilityB = 1.0;
-      // Play grab FX on multiplayer clients too
+      // Play grab FX on multiplayer clients (both hit and miss)
       this.playGrabFX(this.clawPos.x, this.clawPos.y, overlapPercent >= 10);
+      // Only set probabilities when the grab is above threshold.
+      // Below-threshold grabs are soft-reset by the server (stay in
+      // phase1) and must NOT leave a stale probabilityA that would
+      // cause applyServerState to enter the suspense path later.
+      if (overlapPercent >= 10) {
+        this.probabilityA = overlapPercent / 100;
+        this.probabilityB = 1.0;
+      }
     } else if (phase === 'phase2') {
       // Legacy path — kept for safety in case the server still emits a
       // phase2 overlap event during transition. Should not happen in

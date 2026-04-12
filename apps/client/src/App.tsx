@@ -242,19 +242,22 @@ export function App() {
         setAppMode('multiplayer');
         setPauseMessage(null);
         setConnectionLost(false);
+        // Only sync HUD-safe fields here. DO NOT set phase, lastResult,
+        // overlapPercent, suspenseProgress, or suspensePhase — those are
+        // managed exclusively by the engine's updateInfo callback so the
+        // engine's suspense/result choreography is never overridden by a
+        // raw server broadcast that races ahead.
         setGameInfo(prev => ({
           ...prev,
           level: state.level,
           coins: state.coins,
-          phase: state.phase,
-          overlapPercent: 0,
-          lastResult: state.lastResult,
-          probabilityA: Math.round(state.probabilityA * 100),
-          probabilityB: Math.round(state.probabilityB * 100),
         }));
       }
 
-      // 2. Pipe to engine for rendering (if engine exists)
+      // 2. Pipe to engine for rendering (if engine exists).
+      // The engine's applyServerState → updateInfo callback is the
+      // authoritative source for phase, lastResult, probabilities, and
+      // suspense state in the HUD.
       engineRef.current?.applyServerState(state);
     });
 

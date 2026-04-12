@@ -332,9 +332,6 @@ export class GameLoopManager {
       overlap: Math.round(overlap * 100) + '%',
       clawDir: game.clawDir,
     });
-    game.room.gameState.probabilityA = overlap;
-    game.room.gameState.probabilityB = 1.0;  // Phase 2 removed: no second probability
-
     // Broadcast the overlap result with debug positions to all players
     this.io.to(game.room.code).emit('game:overlap', {
       phase: 'phase1',
@@ -344,9 +341,18 @@ export class GameLoopManager {
     });
 
     if (overlap < OVERLAP_THRESHOLD) {
-      this.failAndResetToPhase1(game);
+      // Below-threshold: soft reset — claw goes back to start, stay in
+      // phase1. No phase='result', no level restart. Mirrors the local
+      // client behaviour in attemptPhase1Grab → resetPhase1().
+      this.resetPhase1(game);
       return;
     }
+
+    // Only set probabilities after confirming overlap ≥ threshold.
+    // Setting them earlier caused clients to see probabilityA > 0 on a
+    // below-threshold fail and mistakenly enter the suspense path.
+    game.room.gameState.probabilityA = overlap;
+    game.room.gameState.probabilityB = 1.0;  // Phase 2 removed: no second probability
 
     // ─── Phase 2 removed ─────────────────────────────────────────
     // Final success/failure is now decided immediately after Phase 1
